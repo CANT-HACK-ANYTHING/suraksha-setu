@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_903dccbbb2b7fac6f983f86ca066d735 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.css"/>
+</head>
+<body>
+    
+    
+    <div style="position: fixed; bottom: 50px; left: 50px; width: 160px; height: 120px; 
+        background-color: white; border:2px solid grey; z-index:9999; font-size:12px;
+        padding: 10px; border-radius: 5px;">
+        <b>Map Legend</b><br>
+        <i style="background: green; color: green; width: 10px; height: 10px; display: inline-block;"></i> Safe Route<br>
+        <i style="background: blue; color: blue; width: 10px; height: 10px; display: inline-block;"></i> Detour Route<br>
+        <i style="background: red; color: red; width: 10px; height: 10px; display: inline-block;"></i> Blocked Route<br>
+        <i style="border-radius: 50%; background: red; width: 10px; height: 10px; display: inline-block;"></i> Hazard Zone
+    </div>
+    
+    
+            <div class="folium-map" id="map_903dccbbb2b7fac6f983f86ca066d735" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_903dccbbb2b7fac6f983f86ca066d735 = L.map(
+                "map_903dccbbb2b7fac6f983f86ca066d735",
+                {
+                    center: [12.9165, 79.1325],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 13,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+            L.control.scale().addTo(map_903dccbbb2b7fac6f983f86ca066d735);
+
+            
+
+        
+    
+            var tile_layer_099cf773d2d3559273082fd281fb6df3 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_099cf773d2d3559273082fd281fb6df3.addTo(map_903dccbbb2b7fac6f983f86ca066d735);
+        
+    
+            var feature_group_a157a17bae7193be2e8b757a41781cb7 = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var marker_e435690d93c23fc91fc6f631d94ded44 = L.marker(
+                [12.9248, 79.1345],
+                {
+}
+            ).addTo(feature_group_a157a17bae7193be2e8b757a41781cb7);
+        
+    
+            var icon_f5a969426840e13e348dae9c10857bc6 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "darkgreen",
+  "iconColor": "white",
+  "icon": "plus-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_abb22b69d938367f652c0d596ea7d3e1 = L.popup({
+  "maxWidth": 280,
+});
+
+        
+            
+                var html_bf87481588f640db021482e3916772dd = $(`<div id="html_bf87481588f640db021482e3916772dd" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; min-width: 200px;">             <h4 style="margin: 0 0 5px 0; color: #1b5e20;">                 CMC Hospital (Town Campus)             </h4>             <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; background: #e0e0e0; padding: 2px 6px; border-radius: 3px;">                 Hospital             </span>             <hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;"/>             <p style="margin: 3px 0; font-size: 12px;"><b>Capacity:</b> 250 persons</p>             <p style="margin: 3px 0; font-size: 12px;"><b>Contact:</b> +91 416 228 1000</p>             <p style="margin: 3px 0; font-size: 11px; color: #555;">Ida Scudder Road, Vellore</p>         </div>         </div>`)[0];
+                popup_abb22b69d938367f652c0d596ea7d3e1.setContent(html_bf87481588f640db021482e3916772dd);
+            
+        
+
+        marker_e435690d93c23fc91fc6f631d94ded44.bindPopup(popup_abb22b69d938367f652c0d596ea7d3e1)
+        ;
+
+        
+    
+    
+            marker_e435690d93c23fc91fc6f631d94ded44.bindTooltip(
+                `<div>
+                     Hospital: CMC Hospital (Town Campus)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_e435690d93c23fc91fc6f631d94ded44.setIcon(icon_f5a969426840e13e348dae9c10857bc6);
+            
+    
+            var marker_26b606b78684e890a6a618f92326e675 = L.marker(
+                [12.8596, 79.1322],
+                {
+}
+            ).addTo(feature_group_a157a17bae7193be2e8b757a41781cb7);
+        
+    
+            var icon_59b53cdef24b3d5c52a85a47d365490f = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "darkgreen",
+  "iconColor": "white",
+  "icon": "plus-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_b208256370e2e011ed9d166a2f86365f = L.popup({
+  "maxWidth": 280,
+});
+
+        
+            
+                var html_87ba3aac084baa5c2a70fdad6d1d61e9 = $(`<div id="html_87ba3aac084baa5c2a70fdad6d1d61e9" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; min-width: 200px;">             <h4 style="margin: 0 0 5px 0; color: #1b5e20;">                 Govt. Vellore Medical College             </h4>             <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; background: #e0e0e0; padding: 2px 6px; border-radius: 3px;">                 Hospital             </span>             <hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;"/>             <p style="margin: 3px 0; font-size: 12px;"><b>Capacity:</b> 400 persons</p>             <p style="margin: 3px 0; font-size: 12px;"><b>Contact:</b> +91 416 226 0900</p>             <p style="margin: 3px 0; font-size: 11px; color: #555;">Adukkamparai, Vellore</p>         </div>         </div>`)[0];
+                popup_b208256370e2e011ed9d166a2f86365f.setContent(html_87ba3aac084baa5c2a70fdad6d1d61e9);
+            
+        
+
+        marker_26b606b78684e890a6a618f92326e675.bindPopup(popup_b208256370e2e011ed9d166a2f86365f)
+        ;
+
+        
+    
+    
+            marker_26b606b78684e890a6a618f92326e675.bindTooltip(
+                `<div>
+                     Hospital: Govt. Vellore Medical College
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_26b606b78684e890a6a618f92326e675.setIcon(icon_59b53cdef24b3d5c52a85a47d365490f);
+            
+    
+            var marker_77034e9743301344f6d813080ac39486 = L.marker(
+                [12.919, 79.128],
+                {
+}
+            ).addTo(feature_group_a157a17bae7193be2e8b757a41781cb7);
+        
+    
+            var icon_342ce7fe6bc62ae851796a3131461988 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "darkgreen",
+  "iconColor": "white",
+  "icon": "plus-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_ca211cb0da96b34f8178ff0c7108cac3 = L.popup({
+  "maxWidth": 280,
+});
+
+        
+            
+                var html_53e28a5001f55e6eeeebe36ab9d75759 = $(`<div id="html_53e28a5001f55e6eeeebe36ab9d75759" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; min-width: 200px;">             <h4 style="margin: 0 0 5px 0; color: #1b5e20;">                 Pentland Hospital             </h4>             <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; background: #e0e0e0; padding: 2px 6px; border-radius: 3px;">                 Hospital             </span>             <hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;"/>             <p style="margin: 3px 0; font-size: 12px;"><b>Capacity:</b> 120 persons</p>             <p style="margin: 3px 0; font-size: 12px;"><b>Contact:</b> +91 416 222 2555</p>             <p style="margin: 3px 0; font-size: 11px; color: #555;">Officers Line, Vellore</p>         </div>         </div>`)[0];
+                popup_ca211cb0da96b34f8178ff0c7108cac3.setContent(html_53e28a5001f55e6eeeebe36ab9d75759);
+            
+        
+
+        marker_77034e9743301344f6d813080ac39486.bindPopup(popup_ca211cb0da96b34f8178ff0c7108cac3)
+        ;
+
+        
+    
+    
+            marker_77034e9743301344f6d813080ac39486.bindTooltip(
+                `<div>
+                     Hospital: Pentland Hospital
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_77034e9743301344f6d813080ac39486.setIcon(icon_342ce7fe6bc62ae851796a3131461988);
+            
+    
+            var marker_3bfebab1ce920515e9bd6566837ebefa = L.marker(
+                [12.9692, 79.1559],
+                {
+}
+            ).addTo(feature_group_a157a17bae7193be2e8b757a41781cb7);
+        
+    
+            var icon_9616f6ba649f3b0f720fe6a6e542ee47 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "purple",
+  "iconColor": "white",
+  "icon": "home",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_414bffb093e82b41b6872f76e84bd091 = L.popup({
+  "maxWidth": 280,
+});
+
+        
+            
+                var html_981b4118865ad14565c9c64bdb3a3091 = $(`<div id="html_981b4118865ad14565c9c64bdb3a3091" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; min-width: 200px;">             <h4 style="margin: 0 0 5px 0; color: #4a148c;">                 VIT Indoor Sports Complex Shelter             </h4>             <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; background: #e0e0e0; padding: 2px 6px; border-radius: 3px;">                 Evacuation Shelter             </span>             <hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;"/>             <p style="margin: 3px 0; font-size: 12px;"><b>Capacity:</b> 1500 persons</p>             <p style="margin: 3px 0; font-size: 12px;"><b>Contact:</b> +91 416 220 2020</p>             <p style="margin: 3px 0; font-size: 11px; color: #555;">VIT Campus, Katpadi</p>         </div>         </div>`)[0];
+                popup_414bffb093e82b41b6872f76e84bd091.setContent(html_981b4118865ad14565c9c64bdb3a3091);
+            
+        
+
+        marker_3bfebab1ce920515e9bd6566837ebefa.bindPopup(popup_414bffb093e82b41b6872f76e84bd091)
+        ;
+
+        
+    
+    
+            marker_3bfebab1ce920515e9bd6566837ebefa.bindTooltip(
+                `<div>
+                     Evacuation Shelter: VIT Indoor Sports Complex Shelter
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_3bfebab1ce920515e9bd6566837ebefa.setIcon(icon_9616f6ba649f3b0f720fe6a6e542ee47);
+            
+    
+            var marker_b56fe85d38e5141927f8949631dbb0dd = L.marker(
+                [12.9215, 79.131],
+                {
+}
+            ).addTo(feature_group_a157a17bae7193be2e8b757a41781cb7);
+        
+    
+            var icon_e1b9885beb331265032355be08044bc2 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "purple",
+  "iconColor": "white",
+  "icon": "home",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_543d38e011761e1e90ddcc42e14c6b60 = L.popup({
+  "maxWidth": 280,
+});
+
+        
+            
+                var html_1fb2f729ed6c9a582e46bf22c872fd23 = $(`<div id="html_1fb2f729ed6c9a582e46bf22c872fd23" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; min-width: 200px;">             <h4 style="margin: 0 0 5px 0; color: #4a148c;">                 Voorhees College Assembly Grounds             </h4>             <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; background: #e0e0e0; padding: 2px 6px; border-radius: 3px;">                 Evacuation Shelter             </span>             <hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;"/>             <p style="margin: 3px 0; font-size: 12px;"><b>Capacity:</b> 800 persons</p>             <p style="margin: 3px 0; font-size: 12px;"><b>Contact:</b> +91 416 222 0317</p>             <p style="margin: 3px 0; font-size: 11px; color: #555;">Officers Line, Vellore</p>         </div>         </div>`)[0];
+                popup_543d38e011761e1e90ddcc42e14c6b60.setContent(html_1fb2f729ed6c9a582e46bf22c872fd23);
+            
+        
+
+        marker_b56fe85d38e5141927f8949631dbb0dd.bindPopup(popup_543d38e011761e1e90ddcc42e14c6b60)
+        ;
+
+        
+    
+    
+            marker_b56fe85d38e5141927f8949631dbb0dd.bindTooltip(
+                `<div>
+                     Evacuation Shelter: Voorhees College Assembly Grounds
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_b56fe85d38e5141927f8949631dbb0dd.setIcon(icon_e1b9885beb331265032355be08044bc2);
+            
+    
+            var marker_952121ca8c84d66ddeaff6ee32c2e605 = L.marker(
+                [12.9358, 79.1678],
+                {
+}
+            ).addTo(feature_group_a157a17bae7193be2e8b757a41781cb7);
+        
+    
+            var icon_f4cbedc23217b5ea13b52dbf6b23287f = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "purple",
+  "iconColor": "white",
+  "icon": "home",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_8bcdaa390ba9cdfecfaba68907cd9488 = L.popup({
+  "maxWidth": 280,
+});
+
+        
+            
+                var html_37b51cea65873189afb956d49fb79450 = $(`<div id="html_37b51cea65873189afb956d49fb79450" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; min-width: 200px;">             <h4 style="margin: 0 0 5px 0; color: #4a148c;">                 Vellore District Collectorate Complex             </h4>             <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; background: #e0e0e0; padding: 2px 6px; border-radius: 3px;">                 Evacuation Shelter             </span>             <hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;"/>             <p style="margin: 3px 0; font-size: 12px;"><b>Capacity:</b> 1200 persons</p>             <p style="margin: 3px 0; font-size: 12px;"><b>Contact:</b> +91 416 225 2501</p>             <p style="margin: 3px 0; font-size: 11px; color: #555;">Sathuvachari, Vellore</p>         </div>         </div>`)[0];
+                popup_8bcdaa390ba9cdfecfaba68907cd9488.setContent(html_37b51cea65873189afb956d49fb79450);
+            
+        
+
+        marker_952121ca8c84d66ddeaff6ee32c2e605.bindPopup(popup_8bcdaa390ba9cdfecfaba68907cd9488)
+        ;
+
+        
+    
+    
+            marker_952121ca8c84d66ddeaff6ee32c2e605.bindTooltip(
+                `<div>
+                     Evacuation Shelter: Vellore District Collectorate Complex
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_952121ca8c84d66ddeaff6ee32c2e605.setIcon(icon_f4cbedc23217b5ea13b52dbf6b23287f);
+            
+    
+            feature_group_a157a17bae7193be2e8b757a41781cb7.addTo(map_903dccbbb2b7fac6f983f86ca066d735);
+        
+    
+            var feature_group_75618d28e316b42e166b1b0e04fe1dd2 = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var circle_8639aefee1da76c7ef8d9c3e60508bb7 = L.circle(
+                [12.958, 79.15],
+                {"bubblingMouseEvents": true, "color": "#d32f2f", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#ef5350", "fillOpacity": 0.35, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 200.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_75618d28e316b42e166b1b0e04fe1dd2);
+        
+    
+            circle_8639aefee1da76c7ef8d9c3e60508bb7.bindTooltip(
+                `<div>
+                     Danger Zone: Severe Flash Flood / Submerged Bridge (200m buffer)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_e13489ca07f13314d0c18a4850a953d9 = L.marker(
+                [12.958, 79.15],
+                {
+}
+            ).addTo(feature_group_75618d28e316b42e166b1b0e04fe1dd2);
+        
+    
+            var icon_4c4b54faca5ed1d9d533da66d67a9c67 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "warning-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_9f08dc0d5d5aa6b26bd96bf033b024d6 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_251fe51f200c296e2f422b41cb84fa12 = $(`<div id="html_251fe51f200c296e2f422b41cb84fa12" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; min-width: 180px;">             <h4 style="margin: 0 0 5px 0; color: #b71c1c;">⚠️ Severe Flash Flood / Submerged Bridge</h4>             <p style="margin: 3px 0; font-size: 12px;"><b>Danger Radius:</b> 200 meters</p>             <p style="margin: 3px 0; font-size: 11px; color: #666;">Avoid entering or crossing this perimeter.</p>         </div>         </div>`)[0];
+                popup_9f08dc0d5d5aa6b26bd96bf033b024d6.setContent(html_251fe51f200c296e2f422b41cb84fa12);
+            
+        
+
+        marker_e13489ca07f13314d0c18a4850a953d9.bindPopup(popup_9f08dc0d5d5aa6b26bd96bf033b024d6)
+        ;
+
+        
+    
+    
+            marker_e13489ca07f13314d0c18a4850a953d9.bindTooltip(
+                `<div>
+                     Hazard: Severe Flash Flood / Submerged Bridge
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_e13489ca07f13314d0c18a4850a953d9.setIcon(icon_4c4b54faca5ed1d9d533da66d67a9c67);
+            
+    
+            var circle_8eb914535f2a4b44748b6689684240dc = L.circle(
+                [12.937, 79.162],
+                {"bubblingMouseEvents": true, "color": "#d32f2f", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#ef5350", "fillOpacity": 0.35, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 120.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_75618d28e316b42e166b1b0e04fe1dd2);
+        
+    
+            circle_8eb914535f2a4b44748b6689684240dc.bindTooltip(
+                `<div>
+                     Danger Zone: Downed High-Voltage Powerline (120m buffer)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_506ae8e8d7989ef357e83b1973ae2eeb = L.marker(
+                [12.937, 79.162],
+                {
+}
+            ).addTo(feature_group_75618d28e316b42e166b1b0e04fe1dd2);
+        
+    
+            var icon_6ab0609fa27bf67b1509af0f20571f99 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "warning-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_797a776a627578e1f5c1f4c5733c2cc2 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_eb4c64025a6b24a625da664527315f77 = $(`<div id="html_eb4c64025a6b24a625da664527315f77" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; min-width: 180px;">             <h4 style="margin: 0 0 5px 0; color: #b71c1c;">⚠️ Downed High-Voltage Powerline</h4>             <p style="margin: 3px 0; font-size: 12px;"><b>Danger Radius:</b> 120 meters</p>             <p style="margin: 3px 0; font-size: 11px; color: #666;">Avoid entering or crossing this perimeter.</p>         </div>         </div>`)[0];
+                popup_797a776a627578e1f5c1f4c5733c2cc2.setContent(html_eb4c64025a6b24a625da664527315f77);
+            
+        
+
+        marker_506ae8e8d7989ef357e83b1973ae2eeb.bindPopup(popup_797a776a627578e1f5c1f4c5733c2cc2)
+        ;
+
+        
+    
+    
+            marker_506ae8e8d7989ef357e83b1973ae2eeb.bindTooltip(
+                `<div>
+                     Hazard: Downed High-Voltage Powerline
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_506ae8e8d7989ef357e83b1973ae2eeb.setIcon(icon_6ab0609fa27bf67b1509af0f20571f99);
+            
+    
+            feature_group_75618d28e316b42e166b1b0e04fe1dd2.addTo(map_903dccbbb2b7fac6f983f86ca066d735);
+        
+    
+            var feature_group_b32a129c2c45eda2604cf0695c7664af = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var poly_line_9e453cfc1a6aa3d63b8213d2cd002b9a = L.polyline(
+                [[12.97, 79.156], [12.958, 79.15], [12.946, 79.143], [12.935, 79.138], [12.9248, 79.1345]],
+                {"bubblingMouseEvents": true, "color": "#d32f2f", "dashArray": "8, 8", "dashOffset": null, "fill": false, "fillColor": "#d32f2f", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.6, "smoothFactor": 1.0, "stroke": true, "weight": 4}
+            ).addTo(feature_group_b32a129c2c45eda2604cf0695c7664af);
+        
+    
+        var popup_7a44ab270b80dc0fdd6948a1df61cdb7 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_476bd1da4c07d13862682c3d2f18a11d = $(`<div id="html_476bd1da4c07d13862682c3d2f18a11d" style="width: 100.0%; height: 100.0%;"><b>Katpadi North to CMC Emergency Corridor</b><br><span style='color:red;'>Primary Blocked by Hazard</span></div>`)[0];
+                popup_7a44ab270b80dc0fdd6948a1df61cdb7.setContent(html_476bd1da4c07d13862682c3d2f18a11d);
+            
+        
+
+        poly_line_9e453cfc1a6aa3d63b8213d2cd002b9a.bindPopup(popup_7a44ab270b80dc0fdd6948a1df61cdb7)
+        ;
+
+        
+    
+    
+            poly_line_9e453cfc1a6aa3d63b8213d2cd002b9a.bindTooltip(
+                `<div>
+                     BLOCKED: Katpadi North to CMC Emergency Corridor (Primary)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_8d687d57e43f422e9ba6481572bb9438 = L.polyline(
+                [[12.97, 79.156], [12.962, 79.163], [12.949, 79.16], [12.938, 79.151], [12.93, 79.141], [12.9248, 79.1345]],
+                {"bubblingMouseEvents": true, "color": "#1565c0", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#1565c0", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.9, "smoothFactor": 1.0, "stroke": true, "weight": 6}
+            ).addTo(feature_group_b32a129c2c45eda2604cf0695c7664af);
+        
+    
+        var popup_6ce7a707002d52217656fa18519b4857 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_e3ae01c9658c70894fe67717ffe635ac = $(`<div id="html_e3ae01c9658c70894fe67717ffe635ac" style="width: 100.0%; height: 100.0%;"><b>Katpadi North to CMC Emergency Corridor</b><br><span style='color:#1565c0;'>Active Detour Route</span></div>`)[0];
+                popup_6ce7a707002d52217656fa18519b4857.setContent(html_e3ae01c9658c70894fe67717ffe635ac);
+            
+        
+
+        poly_line_8d687d57e43f422e9ba6481572bb9438.bindPopup(popup_6ce7a707002d52217656fa18519b4857)
+        ;
+
+        
+    
+    
+            poly_line_8d687d57e43f422e9ba6481572bb9438.bindTooltip(
+                `<div>
+                     RECOMMENDED DETOUR: Katpadi North to CMC Emergency Corridor
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_db855b7ab635b400370cd27aacd98271 = L.polyline(
+                [[12.948, 79.172], [12.943, 79.1695], [12.938, 79.1685], [12.9358, 79.1678]],
+                {"bubblingMouseEvents": true, "color": "#2e7d32", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#2e7d32", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.85, "smoothFactor": 1.0, "stroke": true, "weight": 6}
+            ).addTo(feature_group_b32a129c2c45eda2604cf0695c7664af);
+        
+    
+        var popup_ab32b7ef384e16bb47d7323966e4d136 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_1247b84dfa3a03210d360c07b4179aca = $(`<div id="html_1247b84dfa3a03210d360c07b4179aca" style="width: 100.0%; height: 100.0%;"><b>Sathuvachari Lowland to Collectorate Shelter</b><br><span style='color:green;'>Active Safe Path</span></div>`)[0];
+                popup_ab32b7ef384e16bb47d7323966e4d136.setContent(html_1247b84dfa3a03210d360c07b4179aca);
+            
+        
+
+        poly_line_db855b7ab635b400370cd27aacd98271.bindPopup(popup_ab32b7ef384e16bb47d7323966e4d136)
+        ;
+
+        
+    
+    
+            poly_line_db855b7ab635b400370cd27aacd98271.bindTooltip(
+                `<div>
+                     SAFE ROUTE: Sathuvachari Lowland to Collectorate Shelter
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_3607b4e2a9c4f5d9d73e08ab45d997e3 = L.polyline(
+                [[12.875, 79.135], [12.89, 79.1335], [12.905, 79.132], [12.915, 79.1315], [12.9215, 79.131]],
+                {"bubblingMouseEvents": true, "color": "#2e7d32", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#2e7d32", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.85, "smoothFactor": 1.0, "stroke": true, "weight": 6}
+            ).addTo(feature_group_b32a129c2c45eda2604cf0695c7664af);
+        
+    
+        var popup_ef6fd441c4aabcabffebec6bc598ca02 = L.popup({
+  "maxWidth": 250,
+});
+
+        
+            
+                var html_aa12d7586df5d762a125ace51a96a099 = $(`<div id="html_aa12d7586df5d762a125ace51a96a099" style="width: 100.0%; height: 100.0%;"><b>Bagayam / Otteri to Central Assembly Shelter</b><br><span style='color:green;'>Active Safe Path</span></div>`)[0];
+                popup_ef6fd441c4aabcabffebec6bc598ca02.setContent(html_aa12d7586df5d762a125ace51a96a099);
+            
+        
+
+        poly_line_3607b4e2a9c4f5d9d73e08ab45d997e3.bindPopup(popup_ef6fd441c4aabcabffebec6bc598ca02)
+        ;
+
+        
+    
+    
+            poly_line_3607b4e2a9c4f5d9d73e08ab45d997e3.bindTooltip(
+                `<div>
+                     SAFE ROUTE: Bagayam / Otteri to Central Assembly Shelter
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            feature_group_b32a129c2c45eda2604cf0695c7664af.addTo(map_903dccbbb2b7fac6f983f86ca066d735);
+        
+    
+            var feature_group_4af83d07dd4ff14e0df842f934c5a1a4 = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var marker_7e26ae7d3c2b81b0cae2ed9d8d03d309 = L.marker(
+                [12.943, 79.169],
+                {
+}
+            ).addTo(feature_group_4af83d07dd4ff14e0df842f934c5a1a4);
+        
+    
+            var icon_948f98d1638d06a39ac2ffbc94c9264e = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "ambulance",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_b0f798e23758752111d74a74baa93397 = L.popup({
+  "maxWidth": 270,
+});
+
+        
+            
+                var html_208b2acd4b0023f557daf73f2769b7c3 = $(`<div id="html_208b2acd4b0023f557daf73f2769b7c3" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 240px; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">             <div style="background: #d32f2f; color: white; padding: 8px 10px;">                 <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Triage Priority</span>                 <div style="font-size: 15px; font-weight: bold;">P1 - Critical (Score: 88.0)</div>             </div>             <div style="padding: 10px; background: #ffffff; font-size: 12px;">                 <div style="margin-bottom: 5px;"><b>Citizen:</b> Ramanathan K.</div>                 <div style="margin-bottom: 5px;"><b>Headcount:</b> 4 people (2 vulnerable)</div>                 <div style="margin-bottom: 5px;"><b>Medical Need:</b> Cardiac patient, out of medication</div>                 <div style="margin-bottom: 5px;"><b>Flood Level:</b> Roof Top</div>                 <div style="margin-bottom: 5px;"><b>Status:</b> Pending</div>                 <div style="margin-top: 8px; font-size: 11px; color: #666; border-top: 1px dashed #ccc; padding-top: 5px;">                     Request ID: #101                 </div>             </div>         </div>         </div>`)[0];
+                popup_b0f798e23758752111d74a74baa93397.setContent(html_208b2acd4b0023f557daf73f2769b7c3);
+            
+        
+
+        marker_7e26ae7d3c2b81b0cae2ed9d8d03d309.bindPopup(popup_b0f798e23758752111d74a74baa93397)
+        ;
+
+        
+    
+    
+            marker_7e26ae7d3c2b81b0cae2ed9d8d03d309.bindTooltip(
+                `<div>
+                     P1 - Critical: Ramanathan K. (Score: 88.0)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_7e26ae7d3c2b81b0cae2ed9d8d03d309.setIcon(icon_948f98d1638d06a39ac2ffbc94c9264e);
+            
+    
+            var marker_3609015b4870b2549636195eb1579141 = L.marker(
+                [12.965, 79.155],
+                {
+}
+            ).addTo(feature_group_4af83d07dd4ff14e0df842f934c5a1a4);
+        
+    
+            var icon_fc3afe5781c37f00aea26408b080aa19 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "exclamation-triangle",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_fcd9ca45db6654505179c9b0624fe3e6 = L.popup({
+  "maxWidth": 270,
+});
+
+        
+            
+                var html_91e8d9c6266d6d39b6f9e07daf7ed79e = $(`<div id="html_91e8d9c6266d6d39b6f9e07daf7ed79e" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 240px; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">             <div style="background: #f57c00; color: white; padding: 8px 10px;">                 <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Triage Priority</span>                 <div style="font-size: 15px; font-weight: bold;">P2 - Urgent (Score: 74.0)</div>             </div>             <div style="padding: 10px; background: #ffffff; font-size: 12px;">                 <div style="margin-bottom: 5px;"><b>Citizen:</b> Lakshmi Narayanan</div>                 <div style="margin-bottom: 5px;"><b>Headcount:</b> 2 people (1 vulnerable)</div>                 <div style="margin-bottom: 5px;"><b>Medical Need:</b> Critical - Stroke symptoms</div>                 <div style="margin-bottom: 5px;"><b>Flood Level:</b> Submerged</div>                 <div style="margin-bottom: 5px;"><b>Status:</b> Pending</div>                 <div style="margin-top: 8px; font-size: 11px; color: #666; border-top: 1px dashed #ccc; padding-top: 5px;">                     Request ID: #106                 </div>             </div>         </div>         </div>`)[0];
+                popup_fcd9ca45db6654505179c9b0624fe3e6.setContent(html_91e8d9c6266d6d39b6f9e07daf7ed79e);
+            
+        
+
+        marker_3609015b4870b2549636195eb1579141.bindPopup(popup_fcd9ca45db6654505179c9b0624fe3e6)
+        ;
+
+        
+    
+    
+            marker_3609015b4870b2549636195eb1579141.bindTooltip(
+                `<div>
+                     P2 - Urgent: Lakshmi Narayanan (Score: 74.0)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_3609015b4870b2549636195eb1579141.setIcon(icon_fc3afe5781c37f00aea26408b080aa19);
+            
+    
+            var marker_acab9c9b730406e1ef6e9a041632c10d = L.marker(
+                [12.955, 79.148],
+                {
+}
+            ).addTo(feature_group_4af83d07dd4ff14e0df842f934c5a1a4);
+        
+    
+            var icon_8d142e0d70be6dc121858888b9184772 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "exclamation-triangle",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_38c31bda36db6dcb368c11651ecf05d7 = L.popup({
+  "maxWidth": 270,
+});
+
+        
+            
+                var html_3998af75f794cc5d06dbc32c4c842710 = $(`<div id="html_3998af75f794cc5d06dbc32c4c842710" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 240px; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">             <div style="background: #f57c00; color: white; padding: 8px 10px;">                 <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Triage Priority</span>                 <div style="font-size: 15px; font-weight: bold;">P2 - Urgent (Score: 54.0)</div>             </div>             <div style="padding: 10px; background: #ffffff; font-size: 12px;">                 <div style="margin-bottom: 5px;"><b>Citizen:</b> Priya Sundaram</div>                 <div style="margin-bottom: 5px;"><b>Headcount:</b> 3 people (1 vulnerable)</div>                 <div style="margin-bottom: 5px;"><b>Medical Need:</b> Fracture / Leg injury</div>                 <div style="margin-bottom: 5px;"><b>Flood Level:</b> First Floor</div>                 <div style="margin-bottom: 5px;"><b>Status:</b> In-Progress</div>                 <div style="margin-top: 8px; font-size: 11px; color: #666; border-top: 1px dashed #ccc; padding-top: 5px;">                     Request ID: #102                 </div>             </div>         </div>         </div>`)[0];
+                popup_38c31bda36db6dcb368c11651ecf05d7.setContent(html_3998af75f794cc5d06dbc32c4c842710);
+            
+        
+
+        marker_acab9c9b730406e1ef6e9a041632c10d.bindPopup(popup_38c31bda36db6dcb368c11651ecf05d7)
+        ;
+
+        
+    
+    
+            marker_acab9c9b730406e1ef6e9a041632c10d.bindTooltip(
+                `<div>
+                     P2 - Urgent: Priya Sundaram (Score: 54.0)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_acab9c9b730406e1ef6e9a041632c10d.setIcon(icon_8d142e0d70be6dc121858888b9184772);
+            
+    
+            var marker_b046b14617e81dda81e84d2b3fafb01f = L.marker(
+                [12.928, 79.138],
+                {
+}
+            ).addTo(feature_group_4af83d07dd4ff14e0df842f934c5a1a4);
+        
+    
+            var icon_356d13b4447cad43f0a99c2bd541e0d3 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "exclamation-triangle",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_e1651fd680cbe36bc716a998d83f78b7 = L.popup({
+  "maxWidth": 270,
+});
+
+        
+            
+                var html_0ea16e429d0623fba9fe3ef29e544fdc = $(`<div id="html_0ea16e429d0623fba9fe3ef29e544fdc" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 240px; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">             <div style="background: #f57c00; color: white; padding: 8px 10px;">                 <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Triage Priority</span>                 <div style="font-size: 15px; font-weight: bold;">P2 - Urgent (Score: 54.0)</div>             </div>             <div style="padding: 10px; background: #ffffff; font-size: 12px;">                 <div style="margin-bottom: 5px;"><b>Citizen:</b> Deepa Venkatesh</div>                 <div style="margin-bottom: 5px;"><b>Headcount:</b> 3 people (1 vulnerable)</div>                 <div style="margin-bottom: 5px;"><b>Medical Need:</b> Pregnant woman in labor</div>                 <div style="margin-bottom: 5px;"><b>Flood Level:</b> First Floor</div>                 <div style="margin-bottom: 5px;"><b>Status:</b> Pending</div>                 <div style="margin-top: 8px; font-size: 11px; color: #666; border-top: 1px dashed #ccc; padding-top: 5px;">                     Request ID: #104                 </div>             </div>         </div>         </div>`)[0];
+                popup_e1651fd680cbe36bc716a998d83f78b7.setContent(html_0ea16e429d0623fba9fe3ef29e544fdc);
+            
+        
+
+        marker_b046b14617e81dda81e84d2b3fafb01f.bindPopup(popup_e1651fd680cbe36bc716a998d83f78b7)
+        ;
+
+        
+    
+    
+            marker_b046b14617e81dda81e84d2b3fafb01f.bindTooltip(
+                `<div>
+                     P2 - Urgent: Deepa Venkatesh (Score: 54.0)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_b046b14617e81dda81e84d2b3fafb01f.setIcon(icon_356d13b4447cad43f0a99c2bd541e0d3);
+            
+    
+            var marker_60d25b0df2cab3fc7e13ee057f14a3f4 = L.marker(
+                [12.91, 79.145],
+                {
+}
+            ).addTo(feature_group_4af83d07dd4ff14e0df842f934c5a1a4);
+        
+    
+            var icon_5af60f10e691960cb5d34587815e73bc = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "info-circle",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_5ffc1e11ba92c82cfafa5ca3238c187f = L.popup({
+  "maxWidth": 270,
+});
+
+        
+            
+                var html_d9401fe0c177b74aad88136c7b7476c6 = $(`<div id="html_d9401fe0c177b74aad88136c7b7476c6" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 240px; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">             <div style="background: #1976d2; color: white; padding: 8px 10px;">                 <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Triage Priority</span>                 <div style="font-size: 15px; font-weight: bold;">P3 - Standard (Score: 33.0)</div>             </div>             <div style="padding: 10px; background: #ffffff; font-size: 12px;">                 <div style="margin-bottom: 5px;"><b>Citizen:</b> Suresh Babu</div>                 <div style="margin-bottom: 5px;"><b>Headcount:</b> 5 people (0 vulnerable)</div>                 <div style="margin-bottom: 5px;"><b>Medical Need:</b> Minor cuts and bruises</div>                 <div style="margin-bottom: 5px;"><b>Flood Level:</b> Waist deep</div>                 <div style="margin-bottom: 5px;"><b>Status:</b> Pending</div>                 <div style="margin-top: 8px; font-size: 11px; color: #666; border-top: 1px dashed #ccc; padding-top: 5px;">                     Request ID: #105                 </div>             </div>         </div>         </div>`)[0];
+                popup_5ffc1e11ba92c82cfafa5ca3238c187f.setContent(html_d9401fe0c177b74aad88136c7b7476c6);
+            
+        
+
+        marker_60d25b0df2cab3fc7e13ee057f14a3f4.bindPopup(popup_5ffc1e11ba92c82cfafa5ca3238c187f)
+        ;
+
+        
+    
+    
+            marker_60d25b0df2cab3fc7e13ee057f14a3f4.bindTooltip(
+                `<div>
+                     P3 - Standard: Suresh Babu (Score: 33.0)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_60d25b0df2cab3fc7e13ee057f14a3f4.setIcon(icon_5af60f10e691960cb5d34587815e73bc);
+            
+    
+            var marker_f6dc3629fb71d3f0e3920ac57197157a = L.marker(
+                [12.89, 79.13],
+                {
+}
+            ).addTo(feature_group_4af83d07dd4ff14e0df842f934c5a1a4);
+        
+    
+            var icon_2f4c1080ff731ab7e2a90b60abc59670 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "info-circle",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_830b780bb3229c227a198a07ece0c08f = L.popup({
+  "maxWidth": 270,
+});
+
+        
+            
+                var html_6662b10e02a266e0a5755f87041c6951 = $(`<div id="html_6662b10e02a266e0a5755f87041c6951" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 240px; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">             <div style="background: #1976d2; color: white; padding: 8px 10px;">                 <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Triage Priority</span>                 <div style="font-size: 15px; font-weight: bold;">P3 - Standard (Score: 10.0)</div>             </div>             <div style="padding: 10px; background: #ffffff; font-size: 12px;">                 <div style="margin-bottom: 5px;"><b>Citizen:</b> Anand Kumar</div>                 <div style="margin-bottom: 5px;"><b>Headcount:</b> 2 people (0 vulnerable)</div>                 <div style="margin-bottom: 5px;"><b>Medical Need:</b> None</div>                 <div style="margin-bottom: 5px;"><b>Flood Level:</b> Ground Floor</div>                 <div style="margin-bottom: 5px;"><b>Status:</b> Pending</div>                 <div style="margin-top: 8px; font-size: 11px; color: #666; border-top: 1px dashed #ccc; padding-top: 5px;">                     Request ID: #103                 </div>             </div>         </div>         </div>`)[0];
+                popup_830b780bb3229c227a198a07ece0c08f.setContent(html_6662b10e02a266e0a5755f87041c6951);
+            
+        
+
+        marker_f6dc3629fb71d3f0e3920ac57197157a.bindPopup(popup_830b780bb3229c227a198a07ece0c08f)
+        ;
+
+        
+    
+    
+            marker_f6dc3629fb71d3f0e3920ac57197157a.bindTooltip(
+                `<div>
+                     P3 - Standard: Anand Kumar (Score: 10.0)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_f6dc3629fb71d3f0e3920ac57197157a.setIcon(icon_2f4c1080ff731ab7e2a90b60abc59670);
+            
+    
+            feature_group_4af83d07dd4ff14e0df842f934c5a1a4.addTo(map_903dccbbb2b7fac6f983f86ca066d735);
+        
+    
+            var tile_layer_4e4f3acfbbfdac0ebf7b872fcd8dd5a3 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {"attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors", "detect_retina": false, "max_native_zoom": 19, "max_zoom": 19, "min_zoom": 0, "no_wrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            );
+            var mini_map_d82f30b3703e559ac7f1e567fba55035 = new L.Control.MiniMap(
+                tile_layer_4e4f3acfbbfdac0ebf7b872fcd8dd5a3,
+                {
+  "position": "bottomright",
+  "width": 150,
+  "height": 150,
+  "collapsedWidth": 25,
+  "collapsedHeight": 25,
+  "zoomLevelOffset": -5,
+  "centerFixed": false,
+  "zoomAnimation": false,
+  "toggleDisplay": true,
+  "autoToggleDisplay": false,
+  "minimized": false,
+}
+            );
+            map_903dccbbb2b7fac6f983f86ca066d735.addControl(mini_map_d82f30b3703e559ac7f1e567fba55035);
+        
+    
+            var layer_control_4f19c23927f9d79bbfb1e479e0b6809c_layers = {
+                base_layers : {
+                    "openstreetmap" : tile_layer_099cf773d2d3559273082fd281fb6df3,
+                },
+                overlays :  {
+                    "Safe Facilities \u0026 Shelters" : feature_group_a157a17bae7193be2e8b757a41781cb7,
+                    "Hazards \u0026 Danger Zones" : feature_group_75618d28e316b42e166b1b0e04fe1dd2,
+                    "Evacuation Corridors" : feature_group_b32a129c2c45eda2604cf0695c7664af,
+                    "SOS Distress Calls" : feature_group_4af83d07dd4ff14e0df842f934c5a1a4,
+                },
+            };
+            let layer_control_4f19c23927f9d79bbfb1e479e0b6809c = L.control.layers(
+                layer_control_4f19c23927f9d79bbfb1e479e0b6809c_layers.base_layers,
+                layer_control_4f19c23927f9d79bbfb1e479e0b6809c_layers.overlays,
+                {
+  "position": "topright",
+  "collapsed": false,
+  "autoZIndex": true,
+}
+            ).addTo(map_903dccbbb2b7fac6f983f86ca066d735);
+
+        
+</script>
+</html>

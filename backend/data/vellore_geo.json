@@ -1,0 +1,130 @@
+{
+  "center": {
+    "lat": 12.9165,
+    "lon": 79.1325,
+    "default_zoom": 13
+  },
+  "facilities": [
+    {
+      "id": "FAC_HOSP_01",
+      "name": "CMC Hospital (Town Campus)",
+      "type": "hospital",
+      "lat": 12.9248,
+      "lon": 79.1345,
+      "capacity": 250,
+      "contact": "+91 416 228 1000",
+      "address": "Ida Scudder Road, Vellore"
+    },
+    {
+      "id": "FAC_HOSP_02",
+      "name": "Govt. Vellore Medical College",
+      "type": "hospital",
+      "lat": 12.8596,
+      "lon": 79.1322,
+      "capacity": 400,
+      "contact": "+91 416 226 0900",
+      "address": "Adukkamparai, Vellore"
+    },
+    {
+      "id": "FAC_HOSP_03",
+      "name": "Pentland Hospital",
+      "type": "hospital",
+      "lat": 12.9190,
+      "lon": 79.1280,
+      "capacity": 120,
+      "contact": "+91 416 222 2555",
+      "address": "Officers Line, Vellore"
+    },
+    {
+      "id": "FAC_SHELTER_01",
+      "name": "VIT Indoor Sports Complex Shelter",
+      "type": "shelter",
+      "lat": 12.9692,
+      "lon": 79.1559,
+      "capacity": 1500,
+      "contact": "+91 416 220 2020",
+      "address": "VIT Campus, Katpadi"
+    },
+    {
+      "id": "FAC_SHELTER_02",
+      "name": "Voorhees College Assembly Grounds",
+      "type": "shelter",
+      "lat": 12.9215,
+      "lon": 79.1310,
+      "capacity": 800,
+      "contact": "+91 416 222 0317",
+      "address": "Officers Line, Vellore"
+    },
+    {
+      "id": "FAC_SHELTER_03",
+      "name": "Vellore District Collectorate Complex",
+      "type": "shelter",
+      "lat": 12.9358,
+      "lon": 79.1678,
+      "capacity": 1200,
+      "contact": "+91 416 225 2501",
+      "address": "Sathuvachari, Vellore"
+    }
+  ],
+  "corridors": [
+    {
+      "id": "CORR_KATPADI_CMC",
+      "name": "Katpadi North to CMC Emergency Corridor",
+      "origin": "Katpadi Junction",
+      "destination": "CMC Hospital",
+      "primary_route": [
+        [12.9700, 79.1560],
+        [12.9580, 79.1500],
+        [12.9460, 79.1430],
+        [12.9350, 79.1380],
+        [12.9248, 79.1345]
+      ],
+      "alternate_route": [
+        [12.9700, 79.1560],
+        [12.9620, 79.1630],
+        [12.9490, 79.1600],
+        [12.9380, 79.1510],
+        [12.9300, 79.1410],
+        [12.9248, 79.1345]
+      ]
+    },
+    {
+      "id": "CORR_SATHUVACHARI_COLLECTORATE",
+      "name": "Sathuvachari Lowland to Collectorate Shelter",
+      "origin": "Palar Riverbank Lowland",
+      "destination": "Vellore Collectorate Complex",
+      "primary_route": [
+        [12.9480, 79.1720],
+        [12.9430, 79.1695],
+        [12.9380, 79.1685],
+        [12.9358, 79.1678]
+      ],
+      "alternate_route": [
+        [12.9480, 79.1720],
+        [12.9460, 79.1790],
+        [12.9390, 79.1760],
+        [12.9358, 79.1678]
+      ]
+    },
+    {
+      "id": "CORR_BAGAYAM_CENTRAL",
+      "name": "Bagayam / Otteri to Central Assembly Shelter",
+      "origin": "Bagayam / Otteri",
+      "destination": "Voorhees College Grounds",
+      "primary_route": [
+        [12.8750, 79.1350],
+        [12.8900, 79.1335],
+        [12.9050, 79.1320],
+        [12.9150, 79.1315],
+        [12.9215, 79.1310]
+      ],
+      "alternate_route": [
+        [12.8750, 79.1350],
+        [12.8820, 79.1240],
+        [12.9000, 79.1220],
+        [12.9130, 79.1260],
+        [12.9215, 79.1310]
+      ]
+    }
+  ]
+}
