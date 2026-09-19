@@ -1,431 +1,485 @@
 import React, { useState } from 'react';
 import {
   Ship,
-  Phone,
-  MapPin,
-  LifeBuoy,
-  Users,
   Navigation,
   CheckCircle2,
+  ArrowRight,
+  MapPin,
   AlertTriangle,
-  Shield,
-  Compass,
+  Home,
+  Clock,
+  Radio,
+  PlusCircle,
+  Zap,
 } from 'lucide-react';
 import type {
-  FieldMission,
   SOSRequest,
   Shelter,
   HazardIncident,
+  ResponderRole,
+  MissionStage,
   Language,
 } from '../types/disaster';
+import { translations } from '../utils/translations';
+import { CrisisAPI, broadcastCrisisEvent } from '../services/api';
 
 interface FieldPersonnelPortalProps {
-  missions: FieldMission[];
   sosRequests: SOSRequest[];
   shelters: Shelter[];
-  onUpdateMissionStatus: (
-    missionId: string,
-    sosId: string,
-    status: FieldMission['status'],
-    shelterId?: string
-  ) => void;
-  onReportFieldHazard: (hazard: HazardIncident) => void;
+  onUpdateSOSStatus: (id: string, status: SOSRequest['status'], stage?: MissionStage) => void;
+  onAddHazard: (hazard: HazardIncident) => void;
+  onShelterIntake: (shelterId: string, count: number) => void;
   lang: Language;
 }
 
+const STAGES: { key: MissionStage; label: string; step: number }[] = [
+  { key: 'ASSIGNED_EN_ROUTE', label: '1. En Route', step: 1 },
+  { key: 'ON_SCENE', label: '2. On Scene', step: 2 },
+  { key: 'EXTRACTING_VICTIMS', label: '3. Extracting', step: 3 },
+  { key: 'SAFE_AT_SHELTER', label: '4. Safe at Shelter', step: 4 },
+];
+
 export const FieldPersonnelPortal: React.FC<FieldPersonnelPortalProps> = ({
-  missions,
   sosRequests,
   shelters,
-  onUpdateMissionStatus,
-  onReportFieldHazard,
-  lang: _lang,
+  onUpdateSOSStatus,
+  onAddHazard,
+  onShelterIntake,
+  lang,
 }) => {
-  const [activeUnit, setActiveUnit] = useState<string>('vol-1');
-  const [dutyStatus, setDutyStatus] = useState<'DEPLOYED' | 'STANDBY' | 'RETURNING'>('DEPLOYED');
-  const [selectedShelterId, setSelectedShelterId] = useState<string>(shelters[0]?.id || 'shelter-1');
+  const t = translations[lang] || translations.en;
 
-  // Responder Profiles
-  const responders = [
-    {
-      id: 'vol-1',
-      name: 'Capt. Arul Prakash',
-      role: 'NDRF Inflatable Motor Boat #3 (60HP)',
-      skill: 'SWIFT WATER RESCUE PILOT',
-      callsign: 'RESCUE-BRAVO-02',
-      assignedSector: 'Palar River Basin / Kangeyanallur Causeway',
-    },
-    {
-      id: 'vol-2',
-      name: 'Dr. Meena Swaminathan',
-      role: 'Rapid Medical Mobile Unit #1',
-      skill: 'TRAUMA MEDIC / PARAMEDIC',
-      callsign: 'MEDIC-ALPHA-01',
-      assignedSector: 'Shenbakkam Lowlands Emergency Post',
-    },
-    {
-      id: 'vol-4',
-      name: 'Karthik Raja',
-      role: 'Thermal Inundation Drone #02',
-      skill: 'RECON DRONE OPERATOR',
-      callsign: 'RECON-EAGLE-04',
-      assignedSector: 'Katpadi Railway Underpass Corridor',
-    },
-  ];
+  // Active Responder Identity
+  const [selectedRole, setSelectedRole] = useState<ResponderRole>('NDRF_BOAT_PILOT');
+  const [responderName, setResponderName] = useState('Sub-Inspector S. Murugan');
+  const [unitCode, setUnitCode] = useState('NDRF-BOAT-04');
 
-  const currentResponder = responders.find((r) => r.id === activeUnit) || responders[0];
+  // Mission Tracking State (maps SOS ID to mission stage)
+  const [missionStages, setMissionStages] = useState<Record<string, MissionStage>>({
+    'sos-1': 'ON_SCENE',
+    'sos-2': 'ASSIGNED_EN_ROUTE',
+  });
 
-  // Derive active tasks: missions assigned or pending high-priority SOS
-  const activeMissions = missions.filter((m) => m.status !== 'COMPLETED');
-  const pendingRequests = sosRequests.filter((r) => r.status === 'RESCUE_BOAT_DISPATCHED' || r.status === 'WAITING_DISPATCH');
+  // Rapid Field Hazard Injection State
+  const [hazardTitle, setHazardTitle] = useState('');
+  const [hazardType, setHazardType] = useState<HazardIncident['type']>('FLOOD_DEEP');
+  const [hazardRoad, setHazardRoad] = useState('');
+  const [hazardDepth, setHazardDepth] = useState('4.5');
+  const [isSubmittingHazard, setIsSubmittingHazard] = useState(false);
 
-  const handleStepStatus = (missionId: string, sosId: string, nextStatus: FieldMission['status']) => {
-    onUpdateMissionStatus(missionId, sosId, nextStatus, selectedShelterId);
+  // Quick Shelter Intake State
+  const [selectedShelterId, setSelectedShelterId] = useState(shelters[0]?.id || 'sh-1');
+  const [intakeCount, setIntakeCount] = useState(4);
+  const [intakeSuccess, setIntakeSuccess] = useState(false);
+
+  // Filter missions relevant for responders
+  const activeMissions = sosRequests.filter(
+    (r) => r.status === 'RESCUE_BOAT_DISPATCHED' || missionStages[r.id]
+  );
+
+  const handleAdvanceStage = (sosId: string, currentStage: MissionStage) => {
+    let nextStage: MissionStage = 'ON_SCENE';
+    if (currentStage === 'ASSIGNED_EN_ROUTE') nextStage = 'ON_SCENE';
+    else if (currentStage === 'ON_SCENE') nextStage = 'EXTRACTING_VICTIMS';
+    else if (currentStage === 'EXTRACTING_VICTIMS') nextStage = 'SAFE_AT_SHELTER';
+    else nextStage = 'SAFE_AT_SHELTER';
+
+    setMissionStages((prev) => ({ ...prev, [sosId]: nextStage }));
+    broadcastCrisisEvent('MISSION_STAGE_UPDATE', { sosId, stage: nextStage, unit: unitCode }, 'field_responder');
+
+    if (nextStage === 'SAFE_AT_SHELTER') {
+      onUpdateSOSStatus(sosId, 'RESCUED', nextStage);
+    }
   };
 
-  const handleQuickFieldObstacle = () => {
-    onReportFieldHazard({
+  const handleInjectFieldHazard = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hazardTitle || !hazardRoad) return;
+
+    setIsSubmittingHazard(true);
+    const newHazard: HazardIncident = {
       id: `haz-field-${Date.now()}`,
-      type: 'FALLEN_TREE',
-      title: 'Floating debris blocking boat propulsion path near Kangeyanallur',
-      hindiTitle: 'कांगेयनल्लूर में तैरता मलबा मार्ग अवरुद्ध कर रहा है',
-      tamilTitle: 'காங்கேயநல்லூர் ஆற்றுப்பகுதியில் படகு பாதை அடைப்பு',
-      location: [12.9460, 79.1350],
-      roadName: 'Palar River Main Channel',
+      type: hazardType,
+      title: hazardTitle,
+      hindiTitle: hazardTitle,
+      tamilTitle: hazardTitle,
+      location: [12.972 + (Math.random() - 0.5) * 0.02, 79.155 + (Math.random() - 0.5) * 0.02],
+      roadName: hazardRoad,
+      waterDepthFeet: parseFloat(hazardDepth) || 3.0,
       status: 'AUTHORITY_VERIFIED',
-      upvotes: 18,
+      upvotes: 12,
       reportedAt: 'Just now',
-      reportedBy: currentResponder.name,
-    });
+      reportedBy: `${unitCode} (${responderName})`,
+    };
+
+    onAddHazard(newHazard);
+    CrisisAPI.reportHazard(newHazard);
+
+    setHazardTitle('');
+    setHazardRoad('');
+    setIsSubmittingHazard(false);
+  };
+
+  const handlePerformShelterIntake = () => {
+    if (!selectedShelterId || intakeCount <= 0) return;
+    onShelterIntake(selectedShelterId, intakeCount);
+    CrisisAPI.registerShelterIntake(selectedShelterId, intakeCount);
+    setIntakeSuccess(true);
+    setTimeout(() => setIntakeSuccess(false), 3000);
   };
 
   return (
-    <div className="flex-1 bg-slate-950 text-slate-100 p-4 sm:p-6 space-y-6 overflow-y-auto">
-      {/* Top Field Operations Header */}
-      <div className="bg-slate-900 border border-blue-900/80 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
+    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      {/* 1. Tactical Responder Header & Role Switcher */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-blue-500 animate-ping"></span>
-              <span className="text-xs font-mono font-bold text-blue-400 uppercase tracking-widest bg-blue-950 px-2.5 py-0.5 rounded border border-blue-800">
-                TACTICAL FIELD DESK (PAGE 3)
+              <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[11px] font-mono tracking-widest text-emerald-400 uppercase font-bold">
+                Field Operations Grid • VHF Ch-16 Connected
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white mt-1 flex items-center gap-2">
-              <Ship className="text-blue-400" size={24} />
-              <span>NDRF 4th BATTALION & AAPDA MITRA FIELD PORTAL</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1">
-              Field Responder mission execution, mobile rescue telemetry, survivor extraction tracking, and direct shelter intake.
+            <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+              <Ship className="text-blue-400" />
+              NDRF & Volunteer Action Terminal
+            </h1>
+            <p className="text-xs text-slate-400">
+              Live responder dispatch execution, field hazard broadcasting, and shelter intake.
             </p>
           </div>
 
-          {/* Unit Selector Pills */}
-          <div className="flex flex-wrap items-center gap-2">
-            {responders.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => setActiveUnit(r.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                  activeUnit === r.id
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-950'
-                    : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
-                }`}
-              >
-                <span>{r.name.split(' ')[0]}</span>
-                <span className="text-[10px] font-mono opacity-80">({r.callsign.split('-')[1]})</span>
-              </button>
-            ))}
+          {/* Role Switcher */}
+          <div className="flex flex-wrap items-center gap-2 bg-slate-950/80 p-1.5 rounded-2xl border border-slate-800">
+            <button
+              onClick={() => {
+                setSelectedRole('NDRF_BOAT_PILOT');
+                setResponderName('Inspector S. Murugan');
+                setUnitCode('NDRF-BOAT-04');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                selectedRole === 'NDRF_BOAT_PILOT'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Ship size={14} />
+              NDRF Boat Pilot
+            </button>
+            <button
+              onClick={() => {
+                setSelectedRole('AAPDA_MITRA_VOLUNTEER');
+                setResponderName('K. Anbarasan (Aapda Mitra)');
+                setUnitCode('VOL-KATPADI-12');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                selectedRole === 'AAPDA_MITRA_VOLUNTEER'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Navigation size={14} />
+              Aapda Mitra
+            </button>
+            <button
+              onClick={() => {
+                setSelectedRole('SDRF_PARAMEDIC');
+                setResponderName('Dr. Kavitha (SDRF Medical)');
+                setUnitCode('SDRF-MED-02');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                selectedRole === 'SDRF_PARAMEDIC'
+                  ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Zap size={14} />
+              SDRF Paramedic
+            </button>
           </div>
         </div>
 
-        {/* Unit Status Bar */}
-        <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-bold">Active Unit:</span>
-            <b className="text-white">{currentResponder.name}</b>
-            <span className="text-blue-300 font-mono">[{currentResponder.role}]</span>
+        {/* Active Badge Bar */}
+        <div className="mt-4 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400">
+          <div className="flex items-center gap-4">
+            <span>
+              Active Unit: <strong className="text-white">{unitCode}</strong>
+            </span>
+            <span>
+              Officer In-Charge: <strong className="text-white">{responderName}</strong>
+            </span>
           </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400">Duty State:</span>
-            <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
-              <button
-                onClick={() => setDutyStatus('DEPLOYED')}
-                className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition ${
-                  dutyStatus === 'DEPLOYED' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                DEPLOYED
-              </button>
-              <button
-                onClick={() => setDutyStatus('STANDBY')}
-                className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition ${
-                  dutyStatus === 'STANDBY' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                STANDBY
-              </button>
-              <button
-                onClick={() => setDutyStatus('RETURNING')}
-                className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition ${
-                  dutyStatus === 'RETURNING' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                RETURNING
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 font-mono text-[11px] text-slate-300">
-            <Compass size={14} className="text-emerald-400" />
-            <span>GPS: 12.9320° N, 79.1120° E (Palar Bund)</span>
+          <div className="flex items-center gap-2 text-blue-400 font-mono text-[11px]">
+            <Radio size={12} className="animate-pulse" />
+            Vellore Palar Basin Sector 3
           </div>
         </div>
       </div>
 
-      {/* Main Field Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Column 1 & 2: Active Assigned Rescue Missions */}
+        {/* 2. Left 2 Columns: Active Rescue Missions & 4-Stage Pipeline */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <LifeBuoy className="text-red-400" size={20} />
-              <h3 className="font-extrabold text-base text-white">
-                MY ACTIVE RESCUE MISSIONS & EVACUATION TICKETS
-              </h3>
-            </div>
-            <span className="text-xs font-mono bg-red-950/80 text-red-300 px-2.5 py-1 rounded border border-red-800">
-              {activeMissions.length || pendingRequests.length} ACTIVE IN FIELD
+            <h2 className="text-sm font-extrabold text-white tracking-wide uppercase flex items-center gap-2">
+              <Clock size={16} className="text-blue-400" />
+              Active Field Missions ({activeMissions.length})
+            </h2>
+            <span className="text-[11px] text-slate-400 font-mono">
+              Click arrow to advance operational pipeline
             </span>
           </div>
 
-          {/* Missions List */}
-          <div className="space-y-4">
-            {pendingRequests.map((req, idx) => {
-              const mission = activeMissions.find((m) => m.sosId === req.id);
-              const status = mission?.status || (req.status === 'RESCUE_BOAT_DISPATCHED' ? 'EN_ROUTE' : 'ASSIGNED');
+          {activeMissions.length === 0 ? (
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-8 text-center space-y-2">
+              <CheckCircle2 size={36} className="text-emerald-400 mx-auto" />
+              <p className="text-white font-bold">All assigned missions cleared!</p>
+              <p className="text-xs text-slate-400">
+                Stand by on VHF Ch-16 or monitor DEOC Command for new priority extractions.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {activeMissions.map((mission) => {
+                const currentStage = missionStages[mission.id] || 'ASSIGNED_EN_ROUTE';
+                const currentStepIdx = STAGES.findIndex((s) => s.key === currentStage);
 
-              return (
-                <div
-                  key={req.id}
-                  className="bg-slate-900/90 border-2 border-red-600/70 rounded-2xl p-5 shadow-2xl space-y-4"
-                >
-                  {/* Card Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-black bg-red-600 text-white uppercase tracking-wider font-mono">
-                          {req.priorityLevel}
-                        </span>
-                        <h4 className="font-black text-lg text-white">
-                          MISSION #{idx + 1}: {req.citizenName}
-                        </h4>
+                return (
+                  <div
+                    key={mission.id}
+                    className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 space-y-4 transition shadow-xl"
+                  >
+                    {/* Mission Header */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase bg-red-950 text-red-400 border border-red-800">
+                            {mission.priorityLevel}
+                          </span>
+                          <h3 className="font-extrabold text-white text-base">
+                            {mission.citizenName}
+                          </h3>
+                        </div>
+                        <p className="text-xs text-slate-300 flex items-center gap-1 mt-1">
+                          <MapPin size={12} className="text-blue-400" />
+                          {mission.landmark} • {mission.trappedCount} People Trapped
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-300 mt-0.5 flex items-center gap-1">
-                        <MapPin size={13} className="text-red-400" />
-                        <span>{req.landmark}</span>
-                      </p>
+
+                      {/* Advance Stage Button */}
+                      <button
+                        onClick={() => handleAdvanceStage(mission.id, currentStage)}
+                        disabled={currentStage === 'SAFE_AT_SHELTER'}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold font-mono transition flex items-center gap-1.5 ${
+                          currentStage === 'SAFE_AT_SHELTER'
+                            ? 'bg-emerald-950 text-emerald-400 border border-emerald-800 cursor-default'
+                            : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                        }`}
+                      >
+                        {currentStage === 'SAFE_AT_SHELTER' ? (
+                          <>
+                            <CheckCircle2 size={14} /> Rescued
+                          </>
+                        ) : (
+                          <>
+                            Next Stage <ArrowRight size={14} />
+                          </>
+                        )}
+                      </button>
                     </div>
 
-                    <div className="text-right font-mono">
-                      <span className="text-xs text-slate-400 block">TRIAGE SCORE</span>
-                      <span className="text-xl font-black text-red-400">{req.urgencyScore}/100</span>
+                    {/* 4-Stage Stepper */}
+                    <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                      <div className="grid grid-cols-4 gap-1">
+                        {STAGES.map((s, idx) => {
+                          const isCompleted = idx <= currentStepIdx;
+                          const isCurrent = idx === currentStepIdx;
+
+                          return (
+                            <div key={s.key} className="text-center space-y-1">
+                              <div
+                                className={`h-1.5 rounded-full transition-all ${
+                                  isCurrent
+                                    ? 'bg-blue-400 shadow-sm shadow-blue-400'
+                                    : isCompleted
+                                    ? 'bg-emerald-500'
+                                    : 'bg-slate-800'
+                                }`}
+                              />
+                              <p
+                                className={`text-[10px] font-mono truncate ${
+                                  isCurrent
+                                    ? 'text-white font-bold'
+                                    : isCompleted
+                                    ? 'text-emerald-400'
+                                    : 'text-slate-500'
+                                }`}
+                              >
+                                {s.label}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Mission Details & Medical Alert */}
+                    <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-800/60">
+                      <div className="flex items-center gap-3">
+                        {mission.medicalEmergency && (
+                          <span className="text-red-400 font-bold flex items-center gap-1">
+                            <AlertTriangle size={12} /> Medical Support Required
+                          </span>
+                        )}
+                        <span>Water Level: <b>{mission.waterLevel}</b></span>
+                      </div>
+                      <span className="text-slate-500 font-mono text-[11px]">{mission.phone}</span>
                     </div>
                   </div>
-
-                  {/* Demographic & Threat Flags */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">PEOPLE TRAPPED</span>
-                      <b className="text-white text-sm flex items-center gap-1">
-                        <Users size={14} className="text-blue-400" />
-                        <span>{req.trappedCount} Citizens</span>
-                      </b>
-                    </div>
-
-                    <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">WATER LEVEL</span>
-                      <b className="text-amber-400 text-sm">{req.waterLevel}</b>
-                    </div>
-
-                    <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">HIGH RISK VULNERABILITY</span>
-                      <b className="text-white text-xs">
-                        {req.hasInfants && '👶 Infant '}
-                        {req.hasElderlyOrDisabled && '🧓 Elderly '}
-                        {req.hasPregnantWomen && '🤰 Pregnant'}
-                      </b>
-                    </div>
-
-                    <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">CONTACT PHONE</span>
-                      <a href={`tel:${req.phone}`} className="text-blue-400 font-bold hover:underline flex items-center gap-1">
-                        <Phone size={12} />
-                        <span>{req.phone}</span>
-                      </a>
-                    </div>
-                  </div>
-
-                  {req.medicalDetails && (
-                    <div className="bg-red-950/40 border border-red-700/60 p-3 rounded-xl text-xs text-red-200">
-                      <b>⚠️ CRITICAL MEDICAL ALERT:</b> {req.medicalDetails}
-                    </div>
-                  )}
-
-                  {/* 4-Step Action Progression Pipeline */}
-                  <div className="pt-2 border-t border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-300">Mission Execution Step:</span>
-                      <span className="font-mono text-emerald-400 font-bold">STATUS: {status}</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <button
-                        onClick={() => handleStepStatus(mission?.id || `mis-${req.id}`, req.id, 'EN_ROUTE')}
-                        className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${
-                          status === 'EN_ROUTE'
-                            ? 'bg-blue-600 text-white shadow-lg'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        }`}
-                      >
-                        <Navigation size={13} />
-                        <span>1. EN ROUTE</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleStepStatus(mission?.id || `mis-${req.id}`, req.id, 'ON_SCENE')}
-                        className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${
-                          status === 'ON_SCENE'
-                            ? 'bg-amber-600 text-white shadow-lg'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        }`}
-                      >
-                        <MapPin size={13} />
-                        <span>2. ON SCENE</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleStepStatus(mission?.id || `mis-${req.id}`, req.id, 'EXTRACTING')}
-                        className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${
-                          status === 'EXTRACTING'
-                            ? 'bg-rose-600 text-white shadow-lg'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        }`}
-                      >
-                        <LifeBuoy size={13} />
-                        <span>3. EXTRACTING</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleStepStatus(mission?.id || `mis-${req.id}`, req.id, 'ARRIVED_SHELTER')}
-                        className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${
-                          status === 'ARRIVED_SHELTER'
-                            ? 'bg-emerald-600 text-white shadow-lg'
-                            : 'bg-emerald-950 text-emerald-300 border border-emerald-700 hover:bg-emerald-900'
-                        }`}
-                      >
-                        <CheckCircle2 size={13} />
-                        <span>4. SAFE AT SHELTER</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {pendingRequests.length === 0 && (
-              <div className="p-8 text-center bg-slate-900/60 rounded-2xl border border-slate-800 text-slate-400">
-                <CheckCircle2 size={36} className="mx-auto text-emerald-400 mb-2" />
-                <h4 className="text-white font-bold">No Pending Evacuation Missions</h4>
-                <p className="text-xs mt-1">All assigned disaster victims in this sector have been transferred to relief shelters.</p>
-              </div>
-            )}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Column 3: Field Utilities & Shelter Intake */}
-        <div className="space-y-5">
-          {/* Direct Shelter Drop-Off Selector */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
-            <h4 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
-              <Shield size={16} className="text-emerald-400" />
-              <span>Destination Shelter Intake</span>
-            </h4>
-            <p className="text-xs text-slate-300">
-              Select destination camp for victim drop-off. Capacity updates across all views immediately:
-            </p>
-
-            <select
-              value={selectedShelterId}
-              onChange={(e) => setSelectedShelterId(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold"
-            >
-              {shelters.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.capacityTotal - s.capacityOccupied} beds free)
-                </option>
-              ))}
-            </select>
-
-            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs space-y-1">
-              <span className="text-slate-400 block font-bold">Selected Shelter Status:</span>
-              <div className="flex justify-between text-white font-bold">
-                <span>Total Capacity:</span>
-                <span>{shelters.find((s) => s.id === selectedShelterId)?.capacityTotal} beds</span>
-              </div>
-              <div className="flex justify-between text-emerald-400 font-bold">
-                <span>Available Now:</span>
-                <span>
-                  {(shelters.find((s) => s.id === selectedShelterId)?.capacityTotal || 0) -
-                    (shelters.find((s) => s.id === selectedShelterId)?.capacityOccupied || 0)}{' '}
-                  free beds
-                </span>
-              </div>
+        {/* 3. Right Column: Rapid Field Hazard Injection & Shelter Intake */}
+        <div className="space-y-6">
+          {/* Rapid Field Hazard Injection */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
+                <AlertTriangle size={16} className="text-amber-400" />
+                Rapid Field Hazard Injection
+              </h3>
+              <span className="text-[10px] bg-amber-950 border border-amber-800 text-amber-300 px-1.5 py-0.5 rounded font-mono">
+                Live Broadcast
+              </span>
             </div>
-          </div>
-
-          {/* Quick Field Hazard Report Button */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
-            <h4 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
-              <AlertTriangle size={16} className="text-amber-400" />
-              <span>Field Obstacle Telemetry</span>
-            </h4>
-            <p className="text-xs text-slate-300">
-              Spotted a new water obstruction or downed powerline while navigating the boat? Report immediately to update the safe route maps:
+            <p className="text-xs text-slate-400">
+              Encountered a submerged culvert or live wire? Broadcast instantly to reroute rescue units.
             </p>
 
-            <button
-              onClick={handleQuickFieldObstacle}
-              className="w-full py-2.5 px-3 bg-amber-600/90 hover:bg-amber-500 text-white font-black rounded-xl text-xs shadow-lg shadow-amber-950 flex items-center justify-center gap-2 transition"
-            >
-              <AlertTriangle size={14} />
-              <span>LOG OBSTACLE AT BOAT POSITION</span>
-            </button>
+            <form onSubmit={handleInjectFieldHazard} className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-300 font-semibold block mb-1">Obstruction Type</label>
+                <select
+                  value={hazardType}
+                  onChange={(e) => setHazardType(e.target.value as any)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="FLOOD_DEEP">Severe Flash Flood / Submerged Road</option>
+                  <option value="LIVE_WIRE">Downed High-Voltage Live Wire</option>
+                  <option value="BRIDGE_CLOSED">Bridge Submerged / Structurally Unsafe</option>
+                  <option value="FALLEN_TREE">Fallen Tree Blocking Emergency Lane</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-slate-300 font-semibold block mb-1">Location / Landmark</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Katpadi Railway Underpass"
+                  value={hazardTitle}
+                  onChange={(e) => setHazardTitle(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-slate-300 font-semibold block mb-1">Road Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. NH-75 Katpadi Road"
+                    value={hazardRoad}
+                    onChange={(e) => setHazardRoad(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-semibold block mb-1">Water Depth (ft)</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={hazardDepth}
+                    onChange={(e) => setHazardDepth(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmittingHazard}
+                className="w-full bg-amber-600 hover:bg-amber-500 text-white font-extrabold py-2.5 rounded-xl shadow-lg shadow-amber-600/30 transition flex items-center justify-center gap-1.5"
+              >
+                <PlusCircle size={14} />
+                Broadcast Hazard to Network
+              </button>
+            </form>
           </div>
 
-          {/* Equipment & Survival Checklist */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl text-xs">
-            <h4 className="font-extrabold text-white uppercase tracking-wider">
-              Field Boat Inventory (Standard NDRF Unit)
-            </h4>
-            <div className="space-y-1.5 text-slate-300">
-              <div className="flex items-center justify-between p-2 bg-slate-950 rounded-lg border border-slate-800">
-                <span>Adult Life Vests:</span>
-                <b className="text-emerald-400">12 Packed</b>
+          {/* Quick Shelter Intake */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
+                <Home size={16} className="text-blue-400" />
+                Shelter Intake Registration
+              </h3>
+              <span className="text-[10px] bg-blue-950 border border-blue-800 text-blue-300 px-1.5 py-0.5 rounded font-mono">
+                Bed Capacity
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Dropped off rescued victims at a shelter? Log headcount to update live available capacity.
+            </p>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-300 font-semibold block mb-1">Select Relief Shelter</label>
+                <select
+                  value={selectedShelterId}
+                  onChange={(e) => setSelectedShelterId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                >
+                  {shelters.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.capacityTotal - s.capacityOccupied} beds free)
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="flex items-center justify-between p-2 bg-slate-950 rounded-lg border border-slate-800">
-                <span>Infant Life Preservers:</span>
-                <b className="text-emerald-400">4 Packed</b>
+
+              <div>
+                <label className="text-slate-300 font-semibold block mb-1">
+                  Rescued People Admitted
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={intakeCount}
+                    onChange={(e) => setIntakeCount(parseInt(e.target.value) || 1)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    onClick={handlePerformShelterIntake}
+                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl transition whitespace-nowrap"
+                  >
+                    Confirm Intake
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center justify-between p-2 bg-slate-950 rounded-lg border border-slate-800">
-                <span>Portable O2 Concentrator:</span>
-                <b className="text-emerald-400">1 Active (100%)</b>
-              </div>
-              <div className="flex items-center justify-between p-2 bg-slate-950 rounded-lg border border-slate-800">
-                <span>VHF Marine Radio:</span>
-                <b className="text-blue-400">Channel 16 (DEOC)</b>
-              </div>
+
+              {intakeSuccess && (
+                <div className="p-2.5 bg-emerald-950 border border-emerald-700 text-emerald-300 rounded-xl text-center font-bold animate-fade-in flex items-center justify-center gap-1.5">
+                  <CheckCircle2 size={14} /> Intake logged & broadcasted!
+                </div>
+              )}
             </div>
           </div>
         </div>

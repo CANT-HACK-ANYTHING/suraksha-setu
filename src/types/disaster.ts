@@ -157,46 +157,52 @@ export interface SafeCheckIn {
 }
 
 export type Language = 'en' | 'hi' | 'ta';
+export type AppMode = 'CITIZEN_HELP' | 'COMMAND_CENTER' | 'FIELD_RESPONDER' | 'CALAMITY_STUDIO' | 'CITIZEN';
 
-// 4 Interconnected Page Modes
-export type PageViewMode =
-  | 'CITIZEN_HELP'      // Page 1: Citizen Help, Video Status & Evacuation Portal
-  | 'COMMAND_CENTER'     // Page 2: DEOC & District Collectorate Command Desk
-  | 'FIELD_RESPONDER'    // Page 3: NDRF Personnel & Aapda Mitra Volunteer Desk
-  | 'CALAMITY_STUDIO';   // Page 4: Live Calamity Simulator & Telemetry Control Room
+export type ResponderRole = 'NDRF_BOAT_PILOT' | 'AAPDA_MITRA_VOLUNTEER' | 'SDRF_PARAMEDIC';
 
-// Legacy alias for backwards compatibility
-export type AppMode = 'CITIZEN' | 'COMMAND_CENTER';
+export type MissionStage =
+  | 'ASSIGNED_EN_ROUTE'
+  | 'ON_SCENE'
+  | 'EXTRACTING_VICTIMS'
+  | 'SAFE_AT_SHELTER';
 
-// Page 4: Calamity Simulation State
-export interface CalamitySimulationControls {
-  riverDischargeCusecs: number; // e.g., 5,000 to 50,000
-  riverGaugeMeters: number;     // e.g., 5.0 to 11.0m (Danger mark: 7.5m)
-  mordhanaDamDischargeCusecs: number; // e.g., 0 to 25,000
-  windSpeedKmh: number;         // e.g., 10 to 160 km/h (Cyclone gusts)
-  rainfallMmPerHour: number;    // e.g., 0 to 250 mm/h
-  inundationDepthFeet: number;  // e.g., 0.5 to 6.5 ft
-  powerGridActive: boolean;     // TANGEDCO feeder status
-  sirenActive: boolean;         // Siren alert broadcasting
-  activeCalamity: CalamityType; // FLOOD, CYCLONE, etc.
-}
-
-// Page 3: Field Responder Mission
-export interface FieldMission {
+export interface ResponderMission {
   id: string;
   sosId: string;
-  responderId: string;
-  responderName: string;
-  responderType: 'NDRF_BOAT' | 'AAPDA_MITRA' | 'PARAMEDIC' | 'DRONE_PILOT';
-  status: 'ASSIGNED' | 'EN_ROUTE' | 'ON_SCENE' | 'EXTRACTING' | 'ARRIVED_SHELTER' | 'COMPLETED';
-  targetLocation: [number, number];
-  targetLandmark: string;
-  trappedCount: number;
-  priorityLevel: 'P1_CRITICAL' | 'P2_HIGH' | 'P3_MODERATE';
-  waterLevel: WaterLevel;
-  medicalUrgency: boolean;
-  destinationShelterId: string;
-  assignedAt: string;
-  lastUpdateTimestamp: string;
-  notes?: string;
+  assignedUnit: string;
+  victimName: string;
+  peopleCount: number;
+  location: [number, number];
+  locationName: string;
+  stage: MissionStage;
+  medicalAttentionNeeded: boolean;
+  updatedAt: string;
+}
+
+export interface CalamityDials {
+  palarDischargeCusecs: number; // 0 - 60,000
+  riverGaugeMeters: number;      // 0 - 10.5 (7.5m Danger line)
+  mordhanaDamCusecs: number;     // 0 - 30,000
+  cycloneWindKmh: number;        // 0 - 180
+  streetInundationFeet: number;  // 0 - 6.5
+  gridPowerOutage: boolean;
+}
+
+export type CrisisEventType =
+  | 'BROADCAST_STAGE_CHANGE'
+  | 'CALAMITY_DIALS_UPDATE'
+  | 'TELEMETRY_UPDATE'
+  | 'NEW_SOS'
+  | 'SOS_DISPATCH'
+  | 'NEW_HAZARD'
+  | 'HAZARD_RESOLVED'
+  | 'SHELTER_INTAKE'
+  | 'MISSION_STAGE_UPDATE';
+
+export interface CrisisMeshMessage {
+  type: CrisisEventType;
+  payload: any;
+  timestamp: string;
+  sender: string;
 }

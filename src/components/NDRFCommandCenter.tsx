@@ -25,6 +25,7 @@ interface NDRFCommandCenterProps {
   onSetBroadcastStage: (stage: 'DANGER' | 'NEAR_DANGER' | 'SAFE') => void;
   autoLoop: boolean;
   onToggleAutoLoop: () => void;
+  onViewCitizenScreen: () => void;
   lang: Language;
 }
 
@@ -39,6 +40,7 @@ export const NDRFCommandCenter: React.FC<NDRFCommandCenterProps> = ({
   onSetBroadcastStage,
   autoLoop,
   onToggleAutoLoop,
+  onViewCitizenScreen,
   lang: _lang,
 }) => {
   const sortedRequests = sortSOSByUrgency(sosRequests);
@@ -236,6 +238,13 @@ export const NDRFCommandCenter: React.FC<NDRFCommandCenterProps> = ({
               }`}
             >
               {autoLoop ? '⏹️ STOP AUTO LOOP' : '▶️ AUTO LOOP (6s)'}
+            </button>
+
+            <button
+              onClick={onViewCitizenScreen}
+              className="text-xs bg-blue-950 hover:bg-blue-900 border border-blue-600 text-blue-300 px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 shadow"
+            >
+              <span>👁️ View Citizen Screen</span>
             </button>
           </div>
         </div>

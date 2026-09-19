@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   ShieldAlert,
   ShieldCheck,
@@ -11,13 +12,8 @@ import {
   Waves,
   Mountain,
   ChevronDown,
-  ZapOff,
-  Volume2,
-  CloudRain,
-  Activity,
-  AlertCircle,
 } from 'lucide-react';
-import type { Language, CalamitySimulationControls, PalarTelemetry } from '../types/disaster';
+import type { Language } from '../types/disaster';
 
 interface StatusStageHeroProps {
   stage?: 'DANGER' | 'NEAR_DANGER' | 'SAFE';
@@ -27,9 +23,6 @@ interface StatusStageHeroProps {
   onOpenShelters: () => void;
   onOpenHelplines: () => void;
   lang: Language;
-  calamityControls?: CalamitySimulationControls;
-  telemetry?: PalarTelemetry;
-  activeHazardsCount?: number;
 }
 
 export const StatusStageHero: React.FC<StatusStageHeroProps> = ({
@@ -40,9 +33,6 @@ export const StatusStageHero: React.FC<StatusStageHeroProps> = ({
   onOpenShelters,
   onOpenHelplines,
   lang,
-  calamityControls,
-  telemetry,
-  activeHazardsCount = 0,
 }) => {
   const stagesData = {
     DANGER: {
@@ -127,11 +117,6 @@ export const StatusStageHero: React.FC<StatusStageHeroProps> = ({
   };
 
   const getStatus = () => {
-    if (telemetry?.advisoryText) {
-      if (lang === 'hi' && telemetry.hindiAdvisoryText) return telemetry.hindiAdvisoryText;
-      if (lang === 'ta' && telemetry.tamilAdvisoryText) return telemetry.tamilAdvisoryText;
-      return telemetry.advisoryText;
-    }
     if (lang === 'hi') return current.statusHi;
     if (lang === 'ta') return current.statusTa;
     return current.statusEn;
@@ -269,53 +254,6 @@ export const StatusStageHero: React.FC<StatusStageHeroProps> = ({
           </span>
         </div>
 
-        {/* 🚨 Dynamic Calamity Warning Banners (Reflected from Calamity Studio) */}
-        {calamityControls?.sirenActive && (
-          <div className="bg-red-600/95 text-white font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-red-300 flex items-center justify-between shadow-2xl shadow-red-950 animate-pulse">
-            <div className="flex items-center gap-2">
-              <Volume2 size={18} className="animate-bounce" />
-              <span>🚨 OFFICIAL EMERGENCY EVACUATION SIREN SOUNDING IN VELLORE / KATPADI!</span>
-            </div>
-            <span className="font-mono text-xs bg-red-950 px-2.5 py-0.5 rounded border border-red-800">
-              DEOC 1077
-            </span>
-          </div>
-        )}
-
-        {calamityControls && !calamityControls.powerGridActive && (
-          <div className="bg-amber-950/90 border border-amber-500/80 text-amber-200 text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center justify-between shadow-xl">
-            <div className="flex items-center gap-2.5">
-              <ZapOff size={18} className="text-amber-400 shrink-0 animate-pulse" />
-              <div>
-                <b>⚡ TANGEDCO GRID OUTAGE:</b> Feeder lines disconnected to prevent electrocution in floodwaters. Conserve phone battery.
-              </div>
-            </div>
-            <span className="font-mono text-[10px] text-amber-400 font-bold bg-black/60 px-2 py-0.5 rounded">
-              BLACKOUT ACTIVE
-            </span>
-          </div>
-        )}
-
-        {activeHazardsCount > 0 && (
-          <div
-            onClick={onOpenMap}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === 'Enter' && onOpenMap()}
-            className="cursor-pointer bg-red-950/80 hover:bg-red-900/80 border border-red-700/80 text-red-200 text-xs px-4 py-2 rounded-xl flex items-center justify-between transition shadow-xl group select-none"
-          >
-            <div className="flex items-center gap-2">
-              <AlertCircle size={15} className="text-red-400 animate-pulse" />
-              <span>
-                <b>⚠️ {activeHazardsCount} ACTIVE ROAD HAZARDS IN KATPADI:</b> Submerged causeways or downed cables logged.
-              </span>
-            </div>
-            <span className="underline font-bold text-red-300 group-hover:text-white transition">
-              Open Safe Bypass Route →
-            </span>
-          </div>
-        )}
-
         {/* Poignant Human Survival Quote Card */}
         <div className="p-4 sm:p-5 rounded-2xl bg-black/80 border border-white/20 backdrop-blur-md shadow-2xl">
           <p className="italic text-sm sm:text-base md:text-lg font-medium text-slate-100 leading-relaxed drop-shadow">
@@ -323,61 +261,15 @@ export const StatusStageHero: React.FC<StatusStageHeroProps> = ({
           </p>
         </div>
 
-        {/* Live Real-Time Telemetry Chips (DIRECTLY REFLECTS CALAMITY STUDIO) */}
+        {/* Live Real-Time Telemetry Chips */}
         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-xs sm:text-sm font-mono">
-          {/* Dynamic Inundation */}
           <div className="bg-black/85 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 shadow-xl flex items-center gap-2">
             <Waves size={16} className={current.accentColor} />
             <span>
-              Inundation:{' '}
-              <b className={current.accentColor}>
-                {calamityControls
-                  ? `${calamityControls.inundationDepthFeet.toFixed(1)} ft`
-                  : current.inundation}
-              </b>
-              {calamityControls && calamityControls.inundationDepthFeet >= 3.5 && (
-                <span className="text-[10px] ml-1.5 px-1.5 py-0.2 bg-red-600 text-white font-bold rounded animate-pulse">
-                  SURGE
-                </span>
-              )}
+              Inundation: <b className={current.accentColor}>{current.inundation}</b>
             </span>
           </div>
 
-          {/* Dynamic Palar Flow & Gauge */}
-          <div className="bg-black/85 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 shadow-xl flex items-center gap-2">
-            <Activity size={16} className="text-blue-400" />
-            <span>
-              Palar Flow:{' '}
-              <b className="text-blue-300">
-                {calamityControls
-                  ? `${calamityControls.riverDischargeCusecs.toLocaleString()} cusecs`
-                  : '31,500 cusecs'}
-              </b>
-              <span className="text-slate-400 text-xs ml-1.5">
-                ({calamityControls ? calamityControls.riverGaugeMeters.toFixed(1) : '8.4'}m gauge)
-              </span>
-            </span>
-          </div>
-
-          {/* Dynamic Rainfall & Wind */}
-          <div className="bg-black/85 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 shadow-xl flex items-center gap-2">
-            <CloudRain size={16} className="text-cyan-400" />
-            <span>
-              Rain:{' '}
-              <b className="text-cyan-300">
-                {calamityControls ? `${calamityControls.rainfallMmPerHour} mm/h` : '85 mm/h'}
-              </b>
-              <span className="text-slate-400 mx-1.5">•</span>
-              <span>
-                Wind:{' '}
-                <b className="text-white">
-                  {calamityControls ? `${calamityControls.windSpeedKmh} km/h` : '45 km/h'}
-                </b>
-              </span>
-            </span>
-          </div>
-
-          {/* Dynamic Elevation */}
           <div className="bg-black/85 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 shadow-xl flex items-center gap-2">
             <Mountain size={16} className="text-emerald-400" />
             <span>
@@ -385,7 +277,6 @@ export const StatusStageHero: React.FC<StatusStageHeroProps> = ({
             </span>
           </div>
 
-          {/* Location Chip */}
           <div className="bg-black/85 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 text-slate-300 shadow-xl flex items-center gap-2">
             <MapPin size={16} className="text-blue-400" />
             <span>Katpadi Ward 12 • Palar River Basin</span>

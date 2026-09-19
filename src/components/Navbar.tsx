@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
 import {
   ShieldAlert,
+  Radio,
   Wifi,
   WifiOff,
   Globe,
   Volume2,
   VolumeX,
+  Layers,
   PhoneCall,
+  Ship,
+  Sliders,
 } from 'lucide-react';
-import type { Language, PageViewMode } from '../types/disaster';
+import type { Language, AppMode } from '../types/disaster';
 import { translations } from '../utils/translations';
 
 interface NavbarProps {
-  mode: PageViewMode;
-  setMode: (mode: PageViewMode) => void;
+  mode: AppMode;
+  setMode: (mode: AppMode) => void;
   lang: Language;
   setLang: (lang: Language) => void;
   isOffline: boolean;
@@ -22,8 +26,8 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  mode: _mode,
-  setMode: _setMode,
+  mode,
+  setMode,
   lang,
   setLang,
   isOffline,
@@ -172,6 +176,61 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             )}
           </button>
+
+          {/* 4-Portal Mode Switcher */}
+          <div className="flex bg-slate-900/90 border border-slate-700/80 p-0.5 rounded-xl">
+            <button
+              onClick={() => setMode('CITIZEN_HELP')}
+              className={`px-2 sm:px-2.5 py-1 text-xs font-bold rounded-lg transition flex items-center gap-1 ${
+                mode === 'CITIZEN_HELP' || mode === 'CITIZEN'
+                  ? 'bg-red-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Citizen Help Portal"
+            >
+              <Radio size={13} />
+              <span className="hidden sm:inline">Citizen</span>
+            </button>
+
+            <button
+              onClick={() => setMode('COMMAND_CENTER')}
+              className={`px-2 sm:px-2.5 py-1 text-xs font-bold rounded-lg transition flex items-center gap-1 ${
+                mode === 'COMMAND_CENTER'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="DEOC Command Center"
+            >
+              <Layers size={13} />
+              <span className="hidden sm:inline">Command</span>
+            </button>
+
+            <button
+              onClick={() => setMode('FIELD_RESPONDER')}
+              className={`px-2 sm:px-2.5 py-1 text-xs font-bold rounded-lg transition flex items-center gap-1 ${
+                mode === 'FIELD_RESPONDER'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="NDRF & Volunteer Field Desk"
+            >
+              <Ship size={13} />
+              <span className="hidden sm:inline">Responder</span>
+            </button>
+
+            <button
+              onClick={() => setMode('CALAMITY_STUDIO')}
+              className={`px-2 sm:px-2.5 py-1 text-xs font-bold rounded-lg transition flex items-center gap-1 ${
+                mode === 'CALAMITY_STUDIO'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Live Calamity Simulation Studio"
+            >
+              <Sliders size={13} />
+              <span className="hidden sm:inline">Studio</span>
+            </button>
+          </div>
         </div>
       </div>
     </header>

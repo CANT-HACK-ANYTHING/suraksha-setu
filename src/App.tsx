@@ -12,9 +12,10 @@ import { FieldPersonnelPortal } from './components/FieldPersonnelPortal';
 import { CalamityStudio } from './components/CalamityStudio';
 import { OfflineRescueKit } from './components/OfflineRescueKit';
 import { FamilyReunionModal } from './components/FamilyReunionModal';
+import { CrisisAPI, subscribeCrisisMesh } from './services/api';
 
 import type {
-  PageViewMode,
+  AppMode,
   Language,
   Shelter,
   HazardIncident,
@@ -23,10 +24,8 @@ import type {
   CalamityType,
   MissingPersonReport,
   SafeCheckIn,
-  CalamitySimulationControls,
-  FieldMission,
+  CalamityDials,
 } from './types/disaster';
-import { crisisApi, subscribeToCrisisEvents, broadcastCrisisEvent } from './services/api';
 import {
   INITIAL_TELEMETRY,
   INITIAL_SHELTERS,
@@ -37,45 +36,8 @@ import {
 } from './data/mockVelloreData';
 import { WifiOff, ShieldCheck, ArrowLeft, Map as MapIcon, Users } from 'lucide-react';
 
-const getModeFromUrl = (): PageViewMode => {
-  if (typeof window === 'undefined') return 'CITIZEN_HELP';
-  const path = window.location.pathname.toLowerCase();
-  const search = new URLSearchParams(window.location.search);
-  const page = search.get('page') || search.get('view') || search.get('tab');
-  const hash = window.location.hash.toLowerCase();
-
-  if (path.includes('command') || page === 'command' || hash.includes('command')) return 'COMMAND_CENTER';
-  if (path.includes('field') || path.includes('volunteer') || path.includes('ndrf') || page === 'field' || hash.includes('field')) return 'FIELD_RESPONDER';
-  if (path.includes('studio') || path.includes('calamity') || path.includes('issue') || page === 'studio' || hash.includes('studio')) return 'CALAMITY_STUDIO';
-  return 'CITIZEN_HELP';
-};
-
 export function App() {
-  const [mode, setMode] = useState<PageViewMode>(getModeFromUrl);
-
-  const handleSetMode = (newMode: PageViewMode) => {
-    setMode(newMode);
-    const routeMap: Record<PageViewMode, string> = {
-      CITIZEN_HELP: '/citizen',
-      COMMAND_CENTER: '/command',
-      FIELD_RESPONDER: '/field',
-      CALAMITY_STUDIO: '/studio',
-    };
-    const targetPath = routeMap[newMode] || '/citizen';
-    try {
-      window.history.pushState({ mode: newMode }, '', targetPath);
-    } catch {
-      // History fallback
-    }
-  };
-
-  useEffect(() => {
-    const onPopState = () => {
-      setMode(getModeFromUrl());
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
+  const [mode, setMode] = useState<AppMode>('CITIZEN');
   const [lang, setLang] = useState<Language>('en');
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [selectedHazard, setSelectedHazard] = useState<CalamityType>('FLOOD');
@@ -84,59 +46,9 @@ export function App() {
   const [citizenView, setCitizenView] = useState<'GUIDE' | 'MAP'>('GUIDE');
 
   // Emergency threat broadcast controlled from DEOC / NDRF Command Center
+  // 'DANGER' (d.mp4), 'NEAR_DANGER' (nd.mp4), 'SAFE' (s.mp4)
   const [broadcastStage, setBroadcastStage] = useState<'DANGER' | 'NEAR_DANGER' | 'SAFE'>('DANGER');
   const [autoLoop, setAutoLoop] = useState<boolean>(false);
-
-  // Page 4: Calamity Simulation State
-  const [calamityControls, setCalamityControls] = useState<CalamitySimulationControls>({
-    riverDischargeCusecs: 31500,
-    riverGaugeMeters: 8.4,
-    mordhanaDamDischargeCusecs: 14200,
-    windSpeedKmh: 45,
-    rainfallMmPerHour: 85,
-    inundationDepthFeet: 4.8,
-    powerGridActive: false,
-    sirenActive: false,
-    activeCalamity: 'FLOOD',
-  });
-
-  // Page 3: Field Missions State
-  const [missions, setMissions] = useState<FieldMission[]>([
-    {
-      id: 'mis-1',
-      sosId: 'sos-1',
-      responderId: 'vol-1',
-      responderName: 'Capt. Arul Prakash (NDRF Boat #3)',
-      responderType: 'NDRF_BOAT',
-      status: 'EN_ROUTE',
-      targetLocation: [12.9320, 79.1120],
-      targetLandmark: 'Shenbakkam, 2nd Cross Street, near Mariamman Temple',
-      trappedCount: 4,
-      priorityLevel: 'P1_CRITICAL',
-      waterLevel: 'FIRST_FLOOR_ROOFTOP',
-      medicalUrgency: true,
-      destinationShelterId: 'shelter-1',
-      assignedAt: '8 mins ago',
-      lastUpdateTimestamp: 'Just now',
-    },
-  ]);
-
-  // Core Real-Time Data State
-  const [telemetry, setTelemetry] = useState<PalarTelemetry>(INITIAL_TELEMETRY);
-  const [shelters, setShelters] = useState<Shelter[]>(INITIAL_SHELTERS);
-  const [hazards, setHazards] = useState<HazardIncident[]>(INITIAL_HAZARDS);
-  const [sosRequests, setSosRequests] = useState<SOSRequest[]>(INITIAL_SOS_REQUESTS);
-  const [missingPersons, setMissingPersons] = useState<MissingPersonReport[]>(INITIAL_MISSING_PERSONS);
-  const [safeCheckIns, setSafeCheckIns] = useState<SafeCheckIn[]>(INITIAL_SAFE_CHECKINS);
-
-  const [selectedShelter, setSelectedShelter] = useState<Shelter | null>(shelters[0]);
-  const [drawerTab, setDrawerTab] = useState<'SHELTERS' | 'REPORT' | 'SURVIVAL'>('SHELTERS');
-
-  // Modal States
-  const [isSOSOpen, setIsSOSOpen] = useState<boolean>(false);
-  const [isHazardOpen, setIsHazardOpen] = useState<boolean>(false);
-  const [isHelplinesOpen, setIsHelplinesOpen] = useState<boolean>(false);
-  const [isReunionOpen, setIsReunionOpen] = useState<boolean>(false);
 
   // Auto-cycle demo simulation when enabled from the controller desk
   useEffect(() => {
@@ -151,140 +63,118 @@ export function App() {
     return () => clearInterval(interval);
   }, [autoLoop]);
 
-  // Multi-window / Multi-tab real-time event synchronization
-  // Multi-window / Multi-tab real-time event synchronization
+  // Core Real-Time Data State
+  const [telemetry, setTelemetry] = useState<PalarTelemetry>(INITIAL_TELEMETRY);
+  const [shelters, setShelters] = useState<Shelter[]>(INITIAL_SHELTERS);
+  const [hazards, setHazards] = useState<HazardIncident[]>(INITIAL_HAZARDS);
+  const [sosRequests, setSosRequests] = useState<SOSRequest[]>(INITIAL_SOS_REQUESTS);
+  const [missingPersons, setMissingPersons] = useState<MissingPersonReport[]>(INITIAL_MISSING_PERSONS);
+  const [safeCheckIns, setSafeCheckIns] = useState<SafeCheckIn[]>(INITIAL_SAFE_CHECKINS);
+
+  // Calamity Studio Real-time Dials State
+  const [calamityDials, setCalamityDials] = useState<CalamityDials>({
+    palarDischargeCusecs: 14500,
+    riverGaugeMeters: 5.8,
+    mordhanaDamCusecs: 6000,
+    cycloneWindKmh: 24,
+    streetInundationFeet: 1.2,
+    gridPowerOutage: false,
+  });
+
+  // Cross-Window Crisis Event Mesh & Initial Backend Data Fetch
   useEffect(() => {
-    const unsubscribe = subscribeToCrisisEvents((event) => {
-      switch (event.type) {
-        case 'CALAMITY_UPDATED':
-          setCalamityControls(event.payload.controls);
-          setTelemetry(event.payload.telemetry);
-          if (event.payload.controls.riverGaugeMeters >= 7.5 || event.payload.controls.riverDischargeCusecs >= 28000) {
-            setBroadcastStage('DANGER');
+    const unsubscribe = subscribeCrisisMesh((msg) => {
+      switch (msg.type) {
+        case 'BROADCAST_STAGE_CHANGE':
+          if (msg.payload?.stage) setBroadcastStage(msg.payload.stage);
+          break;
+        case 'CALAMITY_DIALS_UPDATE':
+          if (msg.payload) {
+            setCalamityDials(msg.payload);
+            // Dynamically recalculate river gauge in telemetry
+            setTelemetry((prev) => ({
+              ...prev,
+              dischargeRateCusecs: msg.payload.palarDischargeCusecs,
+              riverGaugeMeters: msg.payload.riverGaugeMeters,
+              mordhanaDamDischargeCusecs: msg.payload.mordhanaDamCusecs,
+            }));
           }
           break;
-        case 'SOS_CREATED':
-          setSosRequests((prev) => {
-            if (prev.some((r) => r.id === event.payload.id)) return prev;
-            return [event.payload, ...prev];
-          });
+        case 'NEW_SOS':
+          if (msg.payload?.id) {
+            setSosRequests((prev) => [msg.payload, ...prev.filter((r) => r.id !== msg.payload.id)]);
+          }
           break;
-        case 'UNIT_DISPATCHED':
-          handleDispatchUnit(event.payload.sosId, event.payload.unitName, false);
+        case 'SOS_DISPATCH':
+          if (msg.payload?.sosId) {
+            setSosRequests((prev) =>
+              prev.map((r) =>
+                r.id === msg.payload.sosId
+                  ? { ...r, status: 'RESCUE_BOAT_DISPATCHED', dispatchedUnit: msg.payload.unitName }
+                  : r
+              )
+            );
+          }
           break;
-        case 'MISSION_STATUS_UPDATED':
-          handleUpdateMissionStatus(event.payload.missionId, event.payload.sosId, event.payload.status, undefined, false);
+        case 'NEW_HAZARD':
+          if (msg.payload?.id) {
+            setHazards((prev) => [msg.payload, ...prev.filter((h) => h.id !== msg.payload.id)]);
+          }
           break;
-        case 'BROADCAST_STAGE_CHANGED':
-          setBroadcastStage(event.payload);
-          break;
-        case 'HAZARD_INJECTED':
-          setHazards((prev) => {
-            if (prev.some((h) => h.id === event.payload.id)) return prev;
-            return [event.payload, ...prev];
-          });
+        case 'SHELTER_INTAKE':
+          if (msg.payload?.shelterId) {
+            setShelters((prev) =>
+              prev.map((s) =>
+                s.id === msg.payload.shelterId
+                  ? {
+                      ...s,
+                      capacityOccupied: Math.min(
+                        s.capacityTotal,
+                        s.capacityOccupied + (msg.payload.additionalOccupancy || 0)
+                      ),
+                    }
+                  : s
+              )
+            );
+          }
           break;
       }
     });
+
+    // Try fetching live records from backend API server if running
+    CrisisAPI.getSOSRequests().then((data) => {
+      if (data && data.length > 0) setSosRequests(data);
+    });
+    CrisisAPI.getHazards().then((data) => {
+      if (data && data.length > 0) setHazards(data);
+    });
+    CrisisAPI.getShelters().then((data) => {
+      if (data && data.length > 0) setShelters(data);
+    });
+
     return unsubscribe;
   }, []);
 
+  const [selectedShelter, setSelectedShelter] = useState<Shelter | null>(shelters[0]);
+  const [drawerTab, setDrawerTab] = useState<'SHELTERS' | 'REPORT' | 'SURVIVAL'>('SHELTERS');
+
+  // Modal States
+  const [isSOSOpen, setIsSOSOpen] = useState<boolean>(false);
+  const [isHazardOpen, setIsHazardOpen] = useState<boolean>(false);
+  const [isHelplinesOpen, setIsHelplinesOpen] = useState<boolean>(false);
+  const [isReunionOpen, setIsReunionOpen] = useState<boolean>(false);
+
   // Citizen Actions
-  const handleNewSOS = async (newRequest: SOSRequest) => {
+  const handleNewSOS = (newRequest: SOSRequest) => {
     setSosRequests((prev) => [newRequest, ...prev]);
-    await crisisApi.submitSOS(newRequest);
   };
 
-  const handleNewHazard = (newHazard: HazardIncident, broadcast = true) => {
+  const handleNewHazard = (newHazard: HazardIncident) => {
     setHazards((prev) => [newHazard, ...prev]);
-    if (broadcast) {
-      broadcastCrisisEvent({ type: 'HAZARD_INJECTED', payload: newHazard });
-    }
   };
 
-  const handleSetBroadcastStage = (stage: 'DANGER' | 'NEAR_DANGER' | 'SAFE', broadcast = true) => {
-    setBroadcastStage(stage);
-    setAutoLoop(false);
-    if (broadcast) {
-      broadcastCrisisEvent({ type: 'BROADCAST_STAGE_CHANGED', payload: stage });
-    }
-  };
-
-  // Page 4: Calamity Studio Actions
-  const handleUpdateCalamityControls = async (updated: Partial<CalamitySimulationControls>) => {
-    const newControls = { ...calamityControls, ...updated };
-    setCalamityControls(newControls);
-
-    const res = await crisisApi.calibrateSimulation(newControls);
-    setTelemetry(res.updatedTelemetry);
-
-    // Continuous dynamic reflection into Citizen Help Page
-    if (
-      newControls.riverGaugeMeters >= 7.5 ||
-      newControls.riverDischargeCusecs >= 28000 ||
-      newControls.inundationDepthFeet >= 3.5 ||
-      newControls.windSpeedKmh >= 100
-    ) {
-      handleSetBroadcastStage('DANGER', true);
-    } else if (
-      newControls.riverGaugeMeters >= 6.0 ||
-      newControls.riverDischargeCusecs >= 18000 ||
-      newControls.inundationDepthFeet >= 1.2 ||
-      newControls.windSpeedKmh >= 60
-    ) {
-      handleSetBroadcastStage('NEAR_DANGER', true);
-    } else {
-      handleSetBroadcastStage('SAFE', true);
-    }
-  };
-
-  const handleResetSimulation = async () => {
-    const resetControls: CalamitySimulationControls = {
-      riverDischargeCusecs: 12000,
-      riverGaugeMeters: 5.2,
-      mordhanaDamDischargeCusecs: 2500,
-      windSpeedKmh: 20,
-      rainfallMmPerHour: 25,
-      inundationDepthFeet: 0.5,
-      powerGridActive: true,
-      sirenActive: false,
-      activeCalamity: 'FLOOD',
-    };
-    setCalamityControls(resetControls);
-    const res = await crisisApi.calibrateSimulation(resetControls);
-    setTelemetry(res.updatedTelemetry);
-    handleSetBroadcastStage('SAFE', true);
-  };
-
-  const handleTriggerSiren = () => {
-    setCalamityControls((prev) => ({ ...prev, sirenActive: true }));
-    setTimeout(() => {
-      setCalamityControls((prev) => ({ ...prev, sirenActive: false }));
-    }, 4500);
-    try {
-      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sawtooth';
-      const now = audioCtx.currentTime;
-      osc.frequency.setValueAtTime(800, now);
-      osc.frequency.linearRampToValueAtTime(1200, now + 0.4);
-      osc.frequency.linearRampToValueAtTime(800, now + 0.8);
-      osc.frequency.linearRampToValueAtTime(1200, now + 1.2);
-      osc.frequency.linearRampToValueAtTime(800, now + 1.6);
-      gain.gain.setValueAtTime(0.25, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 2.0);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 2.0);
-    } catch {
-      // Audio context fallback
-    }
-  };
-
-  // NDRF Command Actions (Page 2) -> Pushes to Field Missions (Page 3)
-  const handleDispatchUnit = (id: string, unitName: string, broadcast = true) => {
+  // NDRF Command Actions
+  const handleDispatchUnit = (id: string, unitName: string) => {
     setSosRequests((prev) =>
       prev.map((r) =>
         r.id === id
@@ -296,34 +186,6 @@ export function App() {
           : r
       )
     );
-
-    const targetReq = sosRequests.find((r) => r.id === id);
-    const newMission: FieldMission = {
-      id: `mis-${Date.now()}`,
-      sosId: id,
-      responderId: 'vol-1',
-      responderName: unitName,
-      responderType: unitName.includes('Boat') ? 'NDRF_BOAT' : 'AAPDA_MITRA',
-      status: 'ASSIGNED',
-      targetLocation: targetReq?.location || [12.9320, 79.1120],
-      targetLandmark: targetReq?.landmark || 'Palar Basin',
-      trappedCount: targetReq?.trappedCount || 3,
-      priorityLevel: targetReq?.priorityLevel || 'P1_CRITICAL',
-      waterLevel: targetReq?.waterLevel || 'WAIST_DEPTH',
-      medicalUrgency: targetReq?.medicalEmergency || false,
-      destinationShelterId: 'shelter-1',
-      assignedAt: 'Just now',
-      lastUpdateTimestamp: 'Just now',
-    };
-
-    setMissions((prev) => [newMission, ...prev]);
-
-    if (broadcast) {
-      broadcastCrisisEvent({
-        type: 'UNIT_DISPATCHED',
-        payload: { sosId: id, unitName, mission: newMission },
-      });
-    }
   };
 
   const handleMarkRescued = (id: string) => {
@@ -339,43 +201,6 @@ export function App() {
     );
   };
 
-  // Field Responder Actions (Page 3)
-  const handleUpdateMissionStatus = (
-    missionId: string,
-    sosId: string,
-    status: FieldMission['status'],
-    shelterId?: string,
-    broadcast = true
-  ) => {
-    setMissions((prev) =>
-      prev.map((m) => (m.id === missionId ? { ...m, status, lastUpdateTimestamp: 'Just now' } : m))
-    );
-
-    if (status === 'ARRIVED_SHELTER') {
-      handleMarkRescued(sosId);
-
-      // Increment shelter occupancy
-      const targetReq = sosRequests.find((r) => r.id === sosId);
-      const victimCount = targetReq?.trappedCount || 2;
-      const targetShelterId = shelterId || 'shelter-1';
-
-      setShelters((prev) =>
-        prev.map((s) =>
-          s.id === targetShelterId
-            ? { ...s, capacityOccupied: Math.min(s.capacityOccupied + victimCount, s.capacityTotal) }
-            : s
-        )
-      );
-    }
-
-    if (broadcast) {
-      broadcastCrisisEvent({
-        type: 'MISSION_STATUS_UPDATED',
-        payload: { missionId, status, sosId },
-      });
-    }
-  };
-
   const handleVerifyHazard = (id: string) => {
     setHazards((prev) =>
       prev.map((h) =>
@@ -387,15 +212,13 @@ export function App() {
   return (
     <div
       className={`min-h-screen text-slate-100 flex flex-col font-sans selection:bg-red-600 selection:text-white ${
-        (mode === 'CITIZEN_HELP' || mode === ('CITIZEN' as PageViewMode)) && citizenView === 'GUIDE'
-          ? 'bg-transparent'
-          : 'bg-slate-950'
+        mode === 'CITIZEN' && citizenView === 'GUIDE' ? 'bg-transparent' : 'bg-slate-950'
       }`}
     >
       {/* 1. Tactical Navigation Bar */}
       <Navbar
         mode={mode}
-        setMode={handleSetMode}
+        setMode={setMode}
         lang={lang}
         setLang={setLang}
         isOffline={isOffline}
@@ -425,8 +248,8 @@ export function App() {
         </div>
       )}
 
-      {/* Multi-Hazard Extensibility Selector */}
-      {!((mode === 'CITIZEN_HELP' || mode === ('CITIZEN' as PageViewMode)) && citizenView === 'GUIDE') && (
+      {/* Multi-Hazard Extensibility Selector (Visible on Map & Command Center views) */}
+      {!(mode === 'CITIZEN' && citizenView === 'GUIDE') && (
         <MultiHazardBar
           selectedHazard={selectedHazard}
           onSelectHazard={setSelectedHazard}
@@ -434,18 +257,16 @@ export function App() {
         />
       )}
 
-      {/* Decision-Support Risk Formula Breakdown Widget */}
-      {!((mode === 'CITIZEN_HELP' || mode === ('CITIZEN' as PageViewMode)) && citizenView === 'GUIDE') && (
+      {/* Decision-Support Risk Formula Breakdown Widget (Visible on Map & Command Center views) */}
+      {!(mode === 'CITIZEN' && citizenView === 'GUIDE') && (
         <RiskEngineWidget weights={telemetry.riskBreakdown} lang={lang} />
       )}
 
-      {/* 2. Main Body: Switchable between the 4 Interconnected Pages */}
-
-      {/* PAGE 1: CITIZEN HELP & EVACUATION PORTAL */}
-      {(mode === 'CITIZEN_HELP' || mode === ('CITIZEN' as PageViewMode)) && (
+      {/* 2. Main Body: 4 Interconnected Operational Portals */}
+      {mode === 'CITIZEN' || mode === 'CITIZEN_HELP' ? (
         <main className="flex-1 flex flex-col relative">
-          {/* Sub-toggle: Guide vs Map & Isolated Direct Link Actions */}
-          <div className="bg-black/60 backdrop-blur-md border-b border-white/10 px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2 z-20">
+          {/* Sub-toggle: Guide vs Map */}
+          <div className="bg-black/60 backdrop-blur-md border-b border-white/10 px-4 py-2 flex items-center justify-between z-20">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCitizenView('GUIDE')}
@@ -471,16 +292,14 @@ export function App() {
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Family Safe Check-In Shortcut */}
-              <button
-                onClick={() => setIsReunionOpen(true)}
-                className="text-xs bg-emerald-950 hover:bg-emerald-900 border border-emerald-600/80 text-emerald-300 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition"
-              >
-                <Users size={12} />
-                <span>{lang === 'en' ? 'Family Check-In' : lang === 'hi' ? 'परिवार चेक-इन' : 'குடும்ப பதிவு'}</span>
-              </button>
-            </div>
+            {/* Family Safe Check-In Shortcut */}
+            <button
+              onClick={() => setIsReunionOpen(true)}
+              className="text-xs bg-emerald-950 hover:bg-emerald-900 border border-emerald-600/80 text-emerald-300 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition"
+            >
+              <Users size={12} />
+              <span>{lang === 'en' ? 'Family Check-In' : lang === 'hi' ? 'परिवार चेक-इन' : 'குடும்ப பதிவு'}</span>
+            </button>
           </div>
 
           {/* View A: The Human-First Animated Status Stages Hero (DEFAULT) */}
@@ -496,38 +315,21 @@ export function App() {
               }}
               onOpenHelplines={() => setIsHelplinesOpen(true)}
               lang={lang}
-              calamityControls={calamityControls}
-              telemetry={telemetry}
-              activeHazardsCount={hazards.filter((h) => h.status === 'AUTHORITY_VERIFIED').length}
             />
           ) : (
-            /* View B: The Interactive Safe Evacuation Map */
-            <div className="flex-1 flex flex-col relative">
-              <div className="bg-slate-900 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between text-xs">
-                <button
-                  onClick={() => setCitizenView('GUIDE')}
-                  className="text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1"
-                >
-                  <ArrowLeft size={14} />
-                  <span>{lang === 'en' ? 'Back to Simple Guide' : '← வழிகாட்டிக்கு திரும்பு'}</span>
-                </button>
-                <span className="text-slate-400">
-                  {lang === 'en' ? 'Showing Safe Elevated Bypass Route' : 'மேடான மாற்று வழி காட்டப்படுகிறது'}
-                </span>
-              </div>
-
+            /* View B: The Tactical GIS Evacuation Leaflet Map */
+            <div className="flex-1 relative flex flex-col">
               <InteractiveMap
                 shelters={shelters}
                 hazards={hazards}
                 sosRequests={sosRequests}
                 selectedShelter={selectedShelter}
-                onSelectShelter={(shelter) => {
-                  setSelectedShelter(shelter);
-                  setDrawerTab('SHELTERS');
-                }}
+                onSelectShelter={(shelter) => setSelectedShelter(shelter)}
+                onReportHazard={() => setIsHazardOpen(true)}
                 lang={lang}
               />
 
+              {/* Slide-over Shelter & Route Drawer */}
               <ShelterDrawer
                 shelters={shelters}
                 selectedShelter={selectedShelter}
@@ -546,10 +348,8 @@ export function App() {
           {/* Floating Radial Hold SOS Button (Thumb-zone trigger) */}
           <RadialSOSButton onTrigger={() => setIsSOSOpen(true)} lang={lang} />
         </main>
-      )}
-
-      {/* PAGE 2: DEOC & DISTRICT COLLECTORATE COMMAND CENTER */}
-      {mode === 'COMMAND_CENTER' && (
+      ) : mode === 'COMMAND_CENTER' ? (
+        /* Page 2: NDRF & District Collector Command Dashboard */
         <main className="flex-1 flex flex-col">
           <NDRFCommandCenter
             sosRequests={sosRequests}
@@ -559,42 +359,46 @@ export function App() {
             onMarkRescued={handleMarkRescued}
             onVerifyHazard={handleVerifyHazard}
             broadcastStage={broadcastStage}
-            onSetBroadcastStage={(st) => handleSetBroadcastStage(st, true)}
+            onSetBroadcastStage={(st) => {
+              setBroadcastStage(st);
+              setAutoLoop(false);
+              CrisisAPI.broadcastStageOverride(st);
+            }}
             autoLoop={autoLoop}
             onToggleAutoLoop={() => setAutoLoop(!autoLoop)}
+            onViewCitizenScreen={() => setMode('CITIZEN_HELP')}
             lang={lang}
           />
         </main>
-      )}
-
-      {/* PAGE 3: NDRF FIELD RESPONDER & VOLUNTEER DESK */}
-      {mode === 'FIELD_RESPONDER' && (
+      ) : mode === 'FIELD_RESPONDER' ? (
+        /* Page 3: NDRF Personnel & Volunteer Field Desk */
         <main className="flex-1 flex flex-col">
           <FieldPersonnelPortal
-            missions={missions}
             sosRequests={sosRequests}
             shelters={shelters}
-            onUpdateMissionStatus={handleUpdateMissionStatus}
-            onReportFieldHazard={handleNewHazard}
+            onUpdateSOSStatus={(id, status) => {
+              setSosRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+            }}
+            onAddHazard={handleNewHazard}
+            onShelterIntake={(shelterId, count) => {
+              setShelters((prev) =>
+                prev.map((s) =>
+                  s.id === shelterId
+                    ? { ...s, capacityOccupied: Math.min(s.capacityTotal, s.capacityOccupied + count) }
+                    : s
+                )
+              );
+            }}
             lang={lang}
           />
         </main>
-      )}
-
-      {/* PAGE 4: LIVE CALAMITY STUDIO & TELEMETRY CONTROL ROOM */}
-      {mode === 'CALAMITY_STUDIO' && (
+      ) : (
+        /* Page 4: Live Calamity Simulation Studio */
         <main className="flex-1 flex flex-col">
           <CalamityStudio
-            controls={calamityControls}
-            telemetry={telemetry}
-            onUpdateControls={handleUpdateCalamityControls}
-            onInjectHazard={handleNewHazard}
-            onResetSimulation={handleResetSimulation}
-            onTriggerSiren={handleTriggerSiren}
-            onSetBroadcastStage={(st) => handleSetBroadcastStage(st, true)}
-            currentBroadcastStage={broadcastStage}
-            autoLoop={autoLoop}
-            onToggleAutoLoop={() => setAutoLoop(!autoLoop)}
+            currentDials={calamityDials}
+            onUpdateDials={setCalamityDials}
+            onAddHazard={handleNewHazard}
             lang={lang}
           />
         </main>
@@ -635,7 +439,7 @@ export function App() {
       {/* Minimal Footer */}
       <footer
         className={`border-t px-4 py-2 text-center text-[11px] text-slate-400 flex flex-wrap items-center justify-between gap-2 z-20 ${
-          mode === 'CITIZEN_HELP' && citizenView === 'GUIDE'
+          mode === 'CITIZEN' && citizenView === 'GUIDE'
             ? 'bg-black/80 backdrop-blur-md border-white/10'
             : 'bg-slate-950 border-slate-800/80'
         }`}

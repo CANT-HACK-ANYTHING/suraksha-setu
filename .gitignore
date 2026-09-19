@@ -12,31 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Python & Virtualenv
-__pycache__/
-*.py[cod]
-*$py.class
-*.pyc
-*.exe
-*.dll
-*.so
-*.dylib
-*.pyd
-pyvenv.cfg
-Activate.ps1
-activate
-activate.bat
-activate.fish
-deactivate.bat
-INSTALLER
-METADATA
-RECORD
-WHEEL
-entry_points.txt
-top_level.txt
-*.db
-*.sqlite3
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -47,3 +22,12 @@ top_level.txt
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
